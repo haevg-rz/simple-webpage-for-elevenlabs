@@ -1,11 +1,9 @@
-// Default values
 const DEFAULT_VALUES = {
     modelId: 'eleven_multilingual_v2',
     voiceId: 'y8FeN9lFTEmQOYCaE07F',
     previousText: ''
 };
 
-// Storage keys
 const STORAGE_KEYS = {
     apiKey: 'elevenlabs_api_key',
     modelId: 'elevenlabs_model_id',
@@ -13,7 +11,8 @@ const STORAGE_KEYS = {
     previousText: 'elevenlabs_previous_text'
 };
 
-// DOM Elements
+const PARAM_KEY = 'config';
+
 const elements = {
     apiKey: document.getElementById('apiKey'),
     apiKeySection: document.getElementById('apiKeySection'),
@@ -32,14 +31,14 @@ const elements = {
 
 let currentAudioBlob = null;
 
-// Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
+    loadParametersFromUrl();
     loadStoredValues();
     setupEventListeners();
 });
 
 function loadStoredValues() {
-    // Load API Key and show/hide sections
+    // Load API Key if exists
     const apiKey = localStorage.getItem(STORAGE_KEYS.apiKey);
     if (apiKey) {
         elements.apiKey.value = apiKey;
@@ -58,10 +57,17 @@ function setupEventListeners() {
     elements.generateVoice.addEventListener('click', generateVoice);
     elements.downloadAudio.addEventListener('click', downloadAudio);
 
-    // Save parameters on change
     elements.modelId.addEventListener('change', () => localStorage.setItem(STORAGE_KEYS.modelId, elements.modelId.value));
     elements.voiceId.addEventListener('change', () => localStorage.setItem(STORAGE_KEYS.voiceId, elements.voiceId.value));
     elements.previousText.addEventListener('change', () => localStorage.setItem(STORAGE_KEYS.previousText, elements.previousText.value));
+
+    document.getElementById('shareUrl').addEventListener('click', () => {
+        const includeApiKey = document.getElementById('includeApiKey').checked;
+        const url = generateShareableUrl(includeApiKey);
+        navigator.clipboard.writeText(url)
+            .then(() => alert('Shareable URL copied to clipboard!'))
+            .catch(err => console.error('Failed to copy URL:', err));
+    });
 }
 
 function saveApiKey() {
@@ -155,4 +161,59 @@ function downloadAudio() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(downloadUrl);
+}
+
+function loadParametersFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const configParam = urlParams.get(PARAM_KEY);
+    
+    if (configParam) {
+        try {
+            const config = JSON.parse(atob(configParam));
+            applyConfig(config);
+            window.history.replaceState({}, '', window.location.pathname);
+        } catch (error) {
+            console.error('Failed to parse URL parameters:', error);
+        }
+    }
+}
+
+function applyConfig(config) {
+    if (config.apiKey) {
+        elements.apiKey.value = config.apiKey;
+        saveApiKey();
+    }
+    if (config.modelId) {
+        elements.modelId.value = config.modelId;
+        localStorage.setItem(STORAGE_KEYS.modelId, config.modelId);
+    }
+    if (config.voiceId) {
+        elements.voiceId.value = config.voiceId;
+        localStorage.setItem(STORAGE_KEYS.voiceId, config.voiceId);
+    }
+    if (config.previousText) {
+        elements.previousText.value = config.previousText;
+        localStorage.setItem(STORAGE_KEYS.previousText, config.previousText);
+    }
+    if (config.text) {
+        elements.text.value = config.text;
+    }
+}
+
+function generateShareableUrl(includeApiKey = false) {
+    const config = {
+        modelId: elements.modelId.value,
+        voiceId: elements.voiceId.value,
+        previousText: elements.previousText.value,
+        text: elements.text.value
+    };
+    
+    if (includeApiKey) {
+        config.apiKey = elements.apiKey.value;
+    }
+    
+    const base64Config = btoa(JSON.stringify(config));
+    const url = new URL(window.location.href);
+    url.search = `?${PARAM_KEY}=${base64Config}`;
+    return url.toString();
 }

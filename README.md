@@ -37,3 +37,16 @@ The development process is documented in these branches:
 1. [setup-copilot](https://github.com/haevg-rz/simple-webpage-for-elevenlabs/tree/setup-copilot) - Initial setup
 2. [project-structure](https://github.com/haevg-rz/simple-webpage-for-elevenlabs/tree/project-structure) - Basic structure
 3. [add-functionality](https://github.com/haevg-rz/simple-webpage-for-elevenlabs/tree/add-functionality) - Core features
+
+## Add Functionality
+
+### Share Config
+
+I want to add a new feature. As HTML Anchor you should be able to set all parameters and fields with a base64 encoded JSON. So that with a link you can set the API key and the voice ID.
+
+This was a bit tricky to implement, because my prompt was not clear enough.
+
+- Prompt: "Add a new feature. As HTML Anchor you should be able to set all paramater and field with a base64 encoded json. So that with a Link to e..g set the api-key and the voice-id."
+- Prompt: "Also add the API key; Remove unnecessary comment"
+- Prompt: "There is no DEFAULT_API_KEY"
+- Prompt: "create a checkbox for includeApiKey of generateShareableUrl"
