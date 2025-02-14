@@ -1,0 +1,22 @@
+body {
+    padding-bottom: 2rem;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 150px;
+}
+
+.btn {
+    margin-right: 0.5rem;
+}
+
+#audioSection {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.25rem;
+}
+
+#audioPlayer {
+    width: 100%;
+}
