@@ -23,6 +23,8 @@ This simple static webpage should have the following features
 # Details
 
 - Tech stack: HTML, CSS, JavaScript, Bootstrap
+- Repo Url is: `https://github.com/haevg-rz/simple-webpage-for-elevenlabs`
+- Github Pages Url is: `https://haevg-rz.github.io/simple-webpage-for-elevenlabs/`
 
 # Technical Demonstration
 
