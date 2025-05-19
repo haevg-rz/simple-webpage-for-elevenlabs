@@ -13,7 +13,7 @@ const STORAGE_KEYS = {
     modelId: 'elevenlabs_model_id',
     voiceId: 'elevenlabs_voice_id',
     previousText: 'elevenlabs_previous_text',
-    // Add keys for sliders
+    // Add keys for slider
     speed: 'elevenlabs_speed',
     stability: 'elevenlabs_stability',
     similarityBoost: 'elevenlabs_similarity_boost',
