@@ -1,14 +1,23 @@
 const DEFAULT_VALUES = {
     modelId: 'eleven_multilingual_v2',
     voiceId: 'y8FeN9lFTEmQOYCaE07F',
-    previousText: ''
+    previousText: '',
+    speed: 1.0,
+    stability: 0.75,
+    similarityBoost: 0.75,
+    style: 0
 };
 
 const STORAGE_KEYS = {
     apiKey: 'elevenlabs_api_key',
     modelId: 'elevenlabs_model_id',
     voiceId: 'elevenlabs_voice_id',
-    previousText: 'elevenlabs_previous_text'
+    previousText: 'elevenlabs_previous_text',
+    // Add keys for sliders
+    speed: 'elevenlabs_speed',
+    stability: 'elevenlabs_stability',
+    similarityBoost: 'elevenlabs_similarity_boost',
+    style: 'elevenlabs_style'
 };
 
 const PARAM_KEY = 'config';
@@ -26,7 +35,24 @@ const elements = {
     generateVoice: document.getElementById('generateVoice'),
     audioSection: document.getElementById('audioSection'),
     audioPlayer: document.getElementById('audioPlayer'),
-    downloadAudio: document.getElementById('downloadAudio')
+    downloadAudio: document.getElementById('downloadAudio'),
+
+    // Add references to the new sliders
+    speedSlider: document.getElementById('speedSlider'),
+    stabilitySlider: document.getElementById('stabilitySlider'),
+    similarityBoostSlider: document.getElementById('similarityBoostSlider'),
+    styleSlider: document.getElementById('styleSlider'),
+    resetParams: document.getElementById('resetParams'),
+    generateVoice: document.getElementById('generateVoice'),
+    audioSection: document.getElementById('audioSection'),
+    audioPlayer: document.getElementById('audioPlayer'),
+    downloadAudio: document.getElementById('downloadAudio'),
+
+    // Add references to display values for sliders
+    speedValueDisplay: document.getElementById('speedValueDisplay'),
+    stabilityValueDisplay: document.getElementById('stabilityValueDisplay'),
+    similarityBoostValueDisplay: document.getElementById('similarityBoostValueDisplay'),
+    styleValueDisplay: document.getElementById('styleValueDisplay')
 };
 
 let currentAudioBlob = null;
@@ -48,6 +74,24 @@ function loadStoredValues() {
     elements.modelId.value = localStorage.getItem(STORAGE_KEYS.modelId) || DEFAULT_VALUES.modelId;
     elements.voiceId.value = localStorage.getItem(STORAGE_KEYS.voiceId) || DEFAULT_VALUES.voiceId;
     elements.previousText.value = localStorage.getItem(STORAGE_KEYS.previousText) || DEFAULT_VALUES.previousText;
+
+     // Load slider values and update their displays
+    if (elements.speedSlider && elements.speedValueDisplay) {
+        elements.speedSlider.value = localStorage.getItem(STORAGE_KEYS.speed) || DEFAULT_VALUES.speed; //loade das gespeicherte speed unter storage key
+        elements.speedValueDisplay.textContent = elements.speedSlider.value;
+    }
+    if (elements.stabilitySlider && elements.stabilityValueDisplay) {
+        elements.stabilitySlider.value = localStorage.getItem(STORAGE_KEYS.stability) || DEFAULT_VALUES.stability;
+        elements.stabilityValueDisplay.textContent = elements.stabilitySlider.value;
+    }
+    if (elements.similarityBoostSlider && elements.similarityBoostValueDisplay) {
+        elements.similarityBoostSlider.value = localStorage.getItem(STORAGE_KEYS.similarityBoost) || DEFAULT_VALUES.similarityBoost;
+        elements.similarityBoostValueDisplay.textContent = elements.similarityBoostSlider.value;
+    }
+    if (elements.styleSlider && elements.styleValueDisplay) {
+        elements.styleSlider.value = localStorage.getItem(STORAGE_KEYS.style) || DEFAULT_VALUES.style;
+        elements.styleValueDisplay.textContent = elements.styleSlider.value;
+    }
 }
 
 function setupEventListeners() {
@@ -60,6 +104,32 @@ function setupEventListeners() {
     elements.modelId.addEventListener('change', () => localStorage.setItem(STORAGE_KEYS.modelId, elements.modelId.value));
     elements.voiceId.addEventListener('change', () => localStorage.setItem(STORAGE_KEYS.voiceId, elements.voiceId.value));
     elements.previousText.addEventListener('change', () => localStorage.setItem(STORAGE_KEYS.previousText, elements.previousText.value));
+    
+    //update slider values
+     if (elements.speedSlider && elements.speedValueDisplay) {
+        elements.speedSlider.addEventListener('input', () => {
+            elements.speedValueDisplay.textContent = elements.speedSlider.value; // Update the display value
+            localStorage.setItem(STORAGE_KEYS.speed, elements.speedSlider.value); // Save speed to localStorage, every time the slider is moved
+        });
+    }
+    if (elements.stabilitySlider && elements.stabilityValueDisplay) { 
+        elements.stabilitySlider.addEventListener('input', () => {
+            elements.stabilityValueDisplay.textContent = elements.stabilitySlider.value;
+            localStorage.setItem(STORAGE_KEYS.stability, elements.stabilitySlider.value); 
+        });
+    }
+    if (elements.similarityBoostSlider && elements.similarityBoostValueDisplay) { 
+        elements.similarityBoostSlider.addEventListener('input', () => {
+            elements.similarityBoostValueDisplay.textContent = elements.similarityBoostSlider.value;
+            localStorage.setItem(STORAGE_KEYS.similarityBoost, elements.similarityBoostSlider.value); 
+        });
+    }
+    if (elements.styleSlider && elements.styleValueDisplay) { 
+        elements.styleSlider.addEventListener('input', () => {
+            elements.styleValueDisplay.textContent = elements.styleSlider.value;
+            localStorage.setItem(STORAGE_KEYS.style, elements.styleSlider.value); 
+        });
+    } 
 
     document.getElementById('shareUrl').addEventListener('click', () => {
         const includeApiKey = document.getElementById('includeApiKey').checked;
@@ -88,7 +158,7 @@ function resetParameters() {
     elements.modelId.value = DEFAULT_VALUES.modelId;
     elements.voiceId.value = DEFAULT_VALUES.voiceId;
     elements.previousText.value = DEFAULT_VALUES.previousText;
-    
+
     localStorage.setItem(STORAGE_KEYS.modelId, DEFAULT_VALUES.modelId);
     localStorage.setItem(STORAGE_KEYS.voiceId, DEFAULT_VALUES.voiceId);
     localStorage.setItem(STORAGE_KEYS.previousText, DEFAULT_VALUES.previousText);
@@ -122,7 +192,14 @@ async function generateVoice() {
                 body: JSON.stringify({
                     text: text,
                     model_id: elements.modelId.value,
-                    previous_text: elements.previousText.value
+                    previous_text: elements.previousText.value,
+                    voice_settings:
+                    {
+                        speed: parseFloat(elements.speedSlider.value),
+                        stability: parseFloat(elements.stabilitySlider.value),
+                        similarity_boost: parseFloat(elements.similarityBoostSlider.value),
+                        style: parseFloat(elements.styleSlider.value)
+                    }
                 })
             }
         );
@@ -133,7 +210,7 @@ async function generateVoice() {
 
         const audioBlob = await response.blob();
         currentAudioBlob = audioBlob;
-        
+
         const audioUrl = URL.createObjectURL(audioBlob);
         elements.audioPlayer.src = audioUrl;
         elements.audioSection.classList.remove('d-none');
@@ -166,7 +243,7 @@ function downloadAudio() {
 function loadParametersFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
     const configParam = urlParams.get(PARAM_KEY);
-    
+
     if (configParam) {
         try {
             const config = JSON.parse(atob(configParam));
@@ -207,11 +284,11 @@ function generateShareableUrl(includeApiKey = false) {
         previousText: elements.previousText.value,
         text: elements.text.value
     };
-    
+
     if (includeApiKey) {
         config.apiKey = elements.apiKey.value;
     }
-    
+
     const base64Config = btoa(JSON.stringify(config));
     const url = new URL(window.location.href);
     url.search = `?${PARAM_KEY}=${base64Config}`;
