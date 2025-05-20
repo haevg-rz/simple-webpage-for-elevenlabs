@@ -20,3 +20,7 @@ textarea {
 #audioPlayer {
     width: 100%;
 }
+
+.sliders-loading {
+    visibility: hidden;
+}

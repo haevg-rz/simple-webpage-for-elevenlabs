@@ -91,6 +91,12 @@ function loadStoredValues() {
         elements.styleSlider.value = localStorage.getItem(STORAGE_KEYS.style) || DEFAULT_VALUES.style;
         elements.styleValueDisplay.textContent = elements.styleSlider.value;
     }
+
+    //ake sliders visible after local Storage values are set
+    const slidersContainer = document.getElementById('voiceSettingsSliders'); //html id of all sliders
+    if (slidersContainer) { 
+        slidersContainer.classList.remove('sliders-loading'); //remove css class hiding sliders
+    }
 }
 
 function setupEventListeners() {
