@@ -14,7 +14,7 @@ const STORAGE_KEYS = {
     voiceId: 'elevenlabs_voice_id',
     previousText: 'elevenlabs_previous_text',
     // Add keys for slider
-    speed: 'elevenlabs_speed',
+    speed: 'elevenlabs_speed', // Store name of speed value, to use as key later on
     stability: 'elevenlabs_stability',
     similarityBoost: 'elevenlabs_similarity_boost',
     style: 'elevenlabs_style'
@@ -75,8 +75,8 @@ function loadStoredValues() {
     elements.previousText.value = localStorage.getItem(STORAGE_KEYS.previousText) || DEFAULT_VALUES.previousText;
 
      // Load slider values and update their displays
-    if (elements.speedSlider && elements.speedValueDisplay) {
-        elements.speedSlider.value = localStorage.getItem(STORAGE_KEYS.speed) || DEFAULT_VALUES.speed; //loade das gespeicherte speed unter storage key
+    if (elements.speedSlider && elements.speedValueDisplay) { //in case the script is loaded in the wrong order
+        elements.speedSlider.value = localStorage.getItem(STORAGE_KEYS.speed) || DEFAULT_VALUES.speed; //lade das gespeicherte speed unter storage key, wenn das nicht funktioniert nutze das default value
         elements.speedValueDisplay.textContent = elements.speedSlider.value;
     }
     if (elements.stabilitySlider && elements.stabilityValueDisplay) {
@@ -129,6 +129,12 @@ function setupEventListeners() {
             localStorage.setItem(STORAGE_KEYS.style, elements.styleSlider.value); 
         });
     } 
+
+     // Initialize Bootstrap Tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 
     document.getElementById('shareUrl').addEventListener('click', () => {
         const includeApiKey = document.getElementById('includeApiKey').checked;
