@@ -239,7 +239,7 @@ async function generateVoice() {
 
         //Telephone Audio Player
         // elements.audioPlayerTelephone.src = audioUrl; //assign the same audio URL to the telephone player
-        const telephoneAudioBlob = await convertToTelephoneQuality(audioBlob);
+        const telephoneAudioBlob = await convertToTelephoneQualitySpeed(audioBlob);
         const telephoneAudioUrl = URL.createObjectURL(telephoneAudioBlob);
         elements.audioPlayerTelephone.src = telephoneAudioUrl;
         
@@ -254,26 +254,68 @@ async function generateVoice() {
     }
 }
 
+// async function convertToTelephoneQualityFFMPEG(audioBlob) {
+//     try {
+//         const { FFmpeg } = await import('@ffmpeg/ffmpeg');
+
+//         const ffmpeg = new FFmpeg();
+//          await ffmpeg.load({
+//             coreURL: await toBlobURL(
+//                 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.4/dist/ffmpeg-core.js',
+//                 'text/javascript'
+//             ),
+//             wasmURL: await toBlobURL(
+//                 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.4/dist/ffmpeg-core.wasm',
+//                 'application/wasm'
+//             )
+//         });
+
+//         // Write input file
+//         const inputData = await audioBlob.arrayBuffer();
+//         await ffmpeg.writeFile('input.mp3', new Uint8Array(inputData));
+
+//         // Run FFmpeg command for resampling to 8kHz mono
+//         await ffmpeg.exec([
+//             '-i', 'input.mp3',
+//             '-ar', '8000',  // Set sample rate to 8kHz
+//             '-ac', '1',     // Set to mono
+//             '-b:a', '32k',  // Set bitrate
+//             'output.mp3'
+//         ]);
+
+//         // Read the processed file
+//         const data = await ffmpeg.readFile('output.mp3');
+//         return new Blob([data], { type: 'audio/mp3' });
+
+//     } catch (error) {
+//         console.error('Error converting audio:', error);
+//         throw error;
+//     }
+// }
 
 async function convertToTelephoneQuality(audioBlob) {
     try {
+        // Create MP3 encoder (mono=1, sampleRate=8000, kbps=32)
+        const mp3encoder = new lamejs.Mp3Encoder(1, 8000, 128); //22050
         // Create AudioContext
         const audioContext = new AudioContext();
         
         // Convert blob to ArrayBuffer
-        const arrayBuffer = await audioBlob.arrayBuffer();
+        const arrayBuffer = await audioBlob.arrayBuffer(); //convert Audio Blob from Parameter to ArrayBuffer
         
         // Decode the audio
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer); //https://developer.mozilla.org/de/docs/Web/API/BaseAudioContext/decodeAudioData
+       
         
+
         // Get audio data and convert to mono if stereo
-        const inputData = audioBuffer.getChannelData(0); // Get first channel
+        const inputData = audioBuffer.getChannelData(0); // Get first channel //https://developer.mozilla.org/de/docs/Web/API/AudioBuffer/getChannelData
         
-        // Create MP3 encoder (mono=1, sampleRate=8000, kbps=32)
-        const mp3encoder = new lamejs.Mp3Encoder(1, 44100, 128); //22050
+       
         
         // Convert Float32Array to Int16Array (required by lamejs)
         const samples = new Int16Array(inputData.length);
+
         for (let i = 0; i < inputData.length; i++) {
             samples[i] = inputData[i] * 32767; // Convert to 16-bit
         }
@@ -288,6 +330,62 @@ async function convertToTelephoneQuality(audioBlob) {
         return mp3Blob;
     } catch (error) {
         console.error('Error converting audio:', error);
+        throw error;
+    }
+}
+
+async function convertToTelephoneQualitySpeed(audioBlob) {
+    try {
+        // Create AudioContext for processing, prepare audioBuffer since only the audioBuffer can have the sample rate changed
+        const audioContext = new AudioContext();
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+        // Calculate length for new sample rate
+        const originalLength = audioBuffer.length;
+        const originalRate = audioBuffer.sampleRate;
+        const targetRate = 8000;
+        const newLength = Math.round(originalLength * (targetRate / originalRate));
+
+        // Create offline context with new sample rate
+        const offlineCtx = new OfflineAudioContext(
+            1, // mono
+            newLength,
+            targetRate // Set target sample rate to 8000Hz
+        );
+
+        // Create source for processing
+        const source = offlineCtx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(offlineCtx.destination);
+
+        // Process the audio
+        source.start();
+        const renderedBuffer = await offlineCtx.startRendering();
+
+        // Get the mono channel data
+        const inputData = renderedBuffer.getChannelData(0);
+
+        // Convert to format lamejs can use
+        const samples = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+            samples[i] = inputData[i] * 32767;
+        }
+
+        // Create MP3 encoder with new sample rate
+        const mp3encoder = new lamejs.Mp3Encoder( //using lamejs here for mp3 encoding
+            1,           // channels (mono)
+            targetRate,  // now using 8000Hz sample rate
+            32          // lower bitrate for telephone quality
+        );
+
+        // Encode and combine
+        const mp3Data = mp3encoder.encodeBuffer(samples);
+        const mp3Final = mp3encoder.flush();
+
+        return new Blob([mp3Data, mp3Final], { type: 'audio/mp3' });
+    } catch (error) {
+        console.error('Error:', error);
         throw error;
     }
 }
