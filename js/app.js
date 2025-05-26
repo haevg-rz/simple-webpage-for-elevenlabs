@@ -201,7 +201,7 @@ async function generateVoice() {
 
     try {
         const response = await fetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${elements.voiceId.value}?output_format=mp3_44100_128`,
+            `https://api.elevenlabs.io/v1/text-to-speech/${elements.voiceId.value}?output_format=mp3_44100_128 `, //mp3_44100_128 //mp3_22050_32
             {
                 method: 'POST',
                 headers: {
@@ -235,11 +235,13 @@ async function generateVoice() {
         // 3. Set up the audio player
         elements.audioPlayer.src = audioUrl;  // Set the audio source
        
-        elements.audioPlayer.play();  // Start playing
+        // elements.audioPlayer.play();  // Start playing
 
         //Telephone Audio Player
-        elements.audioPlayerTelephone.src = audioUrl; //assign the same audio URL to the telephone player
-        
+        // elements.audioPlayerTelephone.src = audioUrl; //assign the same audio URL to the telephone player
+        const telephoneAudioBlob = await convertToTelephoneQuality(audioBlob);
+        const telephoneAudioUrl = URL.createObjectURL(telephoneAudioBlob);
+        elements.audioPlayerTelephone.src = telephoneAudioUrl;
         
         
         elements.audioSection.classList.remove('d-none'); // Make both players visible
@@ -249,6 +251,44 @@ async function generateVoice() {
     } finally {
         elements.generateVoice.disabled = false;
         elements.generateVoice.textContent = 'Generate Voice';
+    }
+}
+
+
+async function convertToTelephoneQuality(audioBlob) {
+    try {
+        // Create AudioContext
+        const audioContext = new AudioContext();
+        
+        // Convert blob to ArrayBuffer
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        
+        // Decode the audio
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        
+        // Get audio data and convert to mono if stereo
+        const inputData = audioBuffer.getChannelData(0); // Get first channel
+        
+        // Create MP3 encoder (mono=1, sampleRate=8000, kbps=32)
+        const mp3encoder = new lamejs.Mp3Encoder(1, 44100, 128); //22050
+        
+        // Convert Float32Array to Int16Array (required by lamejs)
+        const samples = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+            samples[i] = inputData[i] * 32767; // Convert to 16-bit
+        }
+        
+        // Encode to MP3
+        const mp3Data = mp3encoder.encodeBuffer(samples);
+        const mp3Final = mp3encoder.flush();
+        
+        // Combine the MP3 data
+        const mp3Blob = new Blob([mp3Data, mp3Final], { type: 'audio/mp3' });
+        
+        return mp3Blob;
+    } catch (error) {
+        console.error('Error converting audio:', error);
+        throw error;
     }
 }
 
