@@ -17,7 +17,7 @@ textarea {
     border-radius: 0.25rem;
 }
 
-#audioPlayer {
+#audioPlayer, #audioPlayerTelephone {
     width: 100%;
 }
 
