@@ -33,9 +33,17 @@ const elements = {
     voiceId: document.getElementById('voiceId'),
     resetParams: document.getElementById('resetParams'),
     generateVoice: document.getElementById('generateVoice'),
-    audioSection: document.getElementById('audioSection'),
+    
+    audioSection: document.getElementById('audioSection'), //Setup Audio Section
+
+    // Default Audio Player Elements
+
     audioPlayer: document.getElementById('audioPlayer'),
     downloadAudio: document.getElementById('downloadAudio'),
+    
+    // Telephone Audio Player Elements
+    audioPlayerTelephone: document.getElementById('audioPlayerTelephone'),
+    downloadAudioTelephone: document.getElementById('downloadAudioTelephone'),
 
     // Add references to the new sliders
     speedSlider: document.getElementById('speedSlider'),
@@ -218,14 +226,23 @@ async function generateVoice() {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-
+        //Default Audio Player
+        // 1. Get the audio data from the API response
         const audioBlob = await response.blob();
         currentAudioBlob = audioBlob;
-
+        // 2. Create a URL for the audio blob
         const audioUrl = URL.createObjectURL(audioBlob);
-        elements.audioPlayer.src = audioUrl;
-        elements.audioSection.classList.remove('d-none');
-        elements.audioPlayer.play();
+        // 3. Set up the audio player
+        elements.audioPlayer.src = audioUrl;  // Set the audio source
+       
+        elements.audioPlayer.play();  // Start playing
+
+        //Telephone Audio Player
+        elements.audioPlayerTelephone.src = audioUrl; //assign the same audio URL to the telephone player
+        
+        
+        
+        elements.audioSection.classList.remove('d-none'); // Make both players visible
 
     } catch (error) {
         alert('Error generating voice: ' + error.message);
