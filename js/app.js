@@ -197,7 +197,7 @@ async function generateVoice() {
 
     try {
         const response = await fetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${elements.voiceId.value}?output_format=mp3_44100_128 `, //mp3_44100_128 //mp3_22050_32
+            `https://api.elevenlabs.io/v1/text-to-speech/${elements.voiceId.value}?output_format=pcm_8000`, //mp3_44100_128 //mp3_22050_32n //pcm_8000
             {
                 method: 'POST',
                 headers: {
@@ -234,7 +234,7 @@ async function generateVoice() {
         // elements.audioPlayer.play();  // Start playing
 
         //Telephone Audio Player
-        telephoneAudioBlob = await convertToTelephoneSampleRate(audioBlob);
+        telephoneAudioBlob = await convertPCM(audioBlob);
         const telephoneAudioUrl = URL.createObjectURL(telephoneAudioBlob);
         elements.audioPlayerTelephone.src = telephoneAudioUrl; // Set the audio source
         
@@ -284,7 +284,14 @@ async function convertToTelephoneSampleRate(audioBlob) {
         // Reference: https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer#example
         const source = offlineCtx.createBufferSource(); // https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode
         source.buffer = audioBuffer;
-        
+
+        //Add Low-Pass Filter  
+        // const antiAliasingFilter = offlineCtx.createBiquadFilter();
+        // antiAliasingFilter.type = 'lowpass';
+        // antiAliasingFilter.frequency.setValueAtTime(2000, offlineCtx.currentTime); // Just below 4kHz (Nyquist frequency for 8kHz)
+        // antiAliasingFilter.Q.setValueAtTime(0.7, offlineCtx.currentTime); // Gentle rolloff
+
+
         // Connect the source to the destination to establish the audio pipeline
         // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Using_Web_Audio_API#modifying_sound
         source.connect(offlineCtx.destination); // Connect audio pipeline to destination
@@ -310,12 +317,38 @@ async function convertToTelephoneSampleRate(audioBlob) {
         const mp3encoder = new lamejs.Mp3Encoder( // Using lamejs for MP3 encoding
             1,           // channels (mono)
             targetRate,  // sample rate (8000Hz for telephone quality)
-            32           // bitrate (low for telephone quality)
+            64           // bitrate (low for telephone quality)
         );
 
         // Encode and combine
         const mp3Data = mp3encoder.encodeBuffer(samples); // Encode the samples to MP3 format
         const mp3Final = mp3encoder.flush(); // Finalize the encoding process
+
+        return new Blob([mp3Data, mp3Final], { type: 'audio/mp3' });
+    } catch (error) {
+        console.error('Error:', error);
+        throw error;
+    }
+}
+
+async function convertPCM(audioBlob) {
+    try {
+           // Since we're already getting PCM at 8kHz, no conversion needed!
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        
+        // PCM 8000 from ElevenLabs is likely 16-bit integers
+        const pcmData = new Int16Array(arrayBuffer);
+        
+        // Create MP3 encoder for 8kHz
+        const mp3encoder = new lamejs.Mp3Encoder(
+            1,    // mono
+            8000, // 8kHz (matches input)
+            64    // Higher bitrate since we're not double-compressing
+        );
+
+        // Encode directly to MP3
+        const mp3Data = mp3encoder.encodeBuffer(pcmData);
+        const mp3Final = mp3encoder.flush();
 
         return new Blob([mp3Data, mp3Final], { type: 'audio/mp3' });
     } catch (error) {
