@@ -37,7 +37,6 @@ const elements = {
     audioSection: document.getElementById('audioSection'), //Setup Audio Section
 
     // Default Audio Player Elements
-
     audioPlayer: document.getElementById('audioPlayer'),
     downloadAudio: document.getElementById('downloadAudio'),
     
@@ -50,11 +49,6 @@ const elements = {
     stabilitySlider: document.getElementById('stabilitySlider'),
     similarityBoostSlider: document.getElementById('similarityBoostSlider'),
     styleSlider: document.getElementById('styleSlider'),
-    resetParams: document.getElementById('resetParams'),
-    generateVoice: document.getElementById('generateVoice'),
-    audioSection: document.getElementById('audioSection'),
-    audioPlayer: document.getElementById('audioPlayer'),
-    downloadAudio: document.getElementById('downloadAudio'),
 
     // Add references to display values for sliders
     speedValueDisplay: document.getElementById('speedValueDisplay'),
@@ -64,6 +58,7 @@ const elements = {
 };
 
 let currentAudioBlob = null;
+let telephoneAudioBlob = null; 
 
 document.addEventListener('DOMContentLoaded', () => {
     loadParametersFromUrl();
@@ -113,6 +108,7 @@ function setupEventListeners() {
     elements.resetParams.addEventListener('click', resetParameters);
     elements.generateVoice.addEventListener('click', generateVoice);
     elements.downloadAudio.addEventListener('click', downloadAudio);
+    elements.downloadAudioTelephone.addEventListener('click', downloadAudioTelephone);
 
     elements.modelId.addEventListener('change', () => localStorage.setItem(STORAGE_KEYS.modelId, elements.modelId.value));
     elements.voiceId.addEventListener('change', () => localStorage.setItem(STORAGE_KEYS.voiceId, elements.voiceId.value));
@@ -238,13 +234,12 @@ async function generateVoice() {
         // elements.audioPlayer.play();  // Start playing
 
         //Telephone Audio Player
-        // elements.audioPlayerTelephone.src = audioUrl; //assign the same audio URL to the telephone player
-        const telephoneAudioBlob = await convertToTelephoneSampleRate(audioBlob);
+        telephoneAudioBlob = await convertToTelephoneSampleRate(audioBlob);
         const telephoneAudioUrl = URL.createObjectURL(telephoneAudioBlob);
-        elements.audioPlayerTelephone.src = telephoneAudioUrl;
+        elements.audioPlayerTelephone.src = telephoneAudioUrl; // Set the audio source
         
         
-        elements.audioSection.classList.remove('d-none'); // Make both players visible
+        elements.audioSection.classList.remove('d-none'); // Make both players visible when audio is generated
 
     } catch (error) {
         alert('Error generating voice: ' + error.message);
@@ -253,9 +248,10 @@ async function generateVoice() {
         elements.generateVoice.textContent = 'Generate Voice';
     }
 }
+
 // This function uses the Web Audio API, which implements Audio Graphs as an Audio Processing Pipeline
 // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Basic_concepts_behind_Web_Audio_API#audio_graphs
-// https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Using_Web_Audio_API#audio_graphs
+
 
 // AudioBuffer represents the raw audio data that can be processed by the Web Audio API.
 // The OfflineAudioContext is used to render audio data offline, allowing for processing without real-time playback.
@@ -278,7 +274,6 @@ async function convertToTelephoneSampleRate(audioBlob) {
 
         // Create offline context with new sample rate 
         // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API#offlinebackground_audio_processing
-        // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Basic_concepts_behind_Web_Audio_API#audio_buffers_frames_samples_and_channels
         const offlineCtx = new OfflineAudioContext(
             1, // mono
             Math.round(audioBuffer.length * (8000 / audioBuffer.sampleRate)), // Calculate new length based on target sample rate: https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext/length
@@ -344,6 +339,24 @@ function downloadAudio() {
     document.body.removeChild(a);
     URL.revokeObjectURL(downloadUrl);
 }
+
+function downloadAudioTelephone() 
+{
+    if (!telephoneAudioBlob) {
+        alert('No telephone audio available to download!');
+        return;
+    }
+    const downloadUrl = URL.createObjectURL(telephoneAudioBlob);
+
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = 'generated-voice_8000Hz.mp3';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(downloadUrl);
+}
+
 
 function loadParametersFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
