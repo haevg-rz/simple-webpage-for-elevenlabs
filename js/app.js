@@ -239,7 +239,7 @@ async function generateVoice() {
 
         //Telephone Audio Player
         // elements.audioPlayerTelephone.src = audioUrl; //assign the same audio URL to the telephone player
-        const telephoneAudioBlob = await convertToTelephoneQualitySpeed(audioBlob);
+        const telephoneAudioBlob = await convertToTelephoneSampleRate(audioBlob);
         const telephoneAudioUrl = URL.createObjectURL(telephoneAudioBlob);
         elements.audioPlayerTelephone.src = telephoneAudioUrl;
         
@@ -267,7 +267,7 @@ async function generateVoice() {
 // Audio Buffers, frames, and channels are explained here: 
 // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Basic_concepts_behind_Web_Audio_API#audio_buffers_frames_samples_and_channels
 // The Web Audio API cannot encode MP3 directly, so we use lamejs to encode the audio data to MP3 format
-async function convertToTelephoneQualitySpeed(audioBlob) {
+async function convertToTelephoneSampleRate(audioBlob) {
     try {
         // Audio context is required for using the Web Audio API
         // We prepare an audioBuffer since only the audioBuffer can have its sample rate changed
