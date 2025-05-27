@@ -196,45 +196,57 @@ async function generateVoice() {
     elements.generateVoice.textContent = 'Generating...';
 
     try {
-        const response = await fetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${elements.voiceId.value}?output_format=pcm_8000`, //mp3_44100_128 //mp3_22050_32n //pcm_8000
-            {
-                method: 'POST',
-                headers: {
-                    'xi-api-key': apiKey,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    text: text,
-                    model_id: elements.modelId.value,
-                    previous_text: elements.previousText.value,
-                    voice_settings:
-                    {
-                        speed: parseFloat(elements.speedSlider.value),
-                        stability: parseFloat(elements.stabilitySlider.value),
-                        similarity_boost: parseFloat(elements.similarityBoostSlider.value),
-                        style: parseFloat(elements.styleSlider.value)
-                    }
-                })
-            }
+        // Common request options
+        const requestOptions = {
+            method: 'POST',
+            headers: {
+                'xi-api-key': apiKey,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text: text,
+                model_id: elements.modelId.value,
+                previous_text: elements.previousText.value,
+                voice_settings: {
+                    speed: parseFloat(elements.speedSlider.value),
+                    stability: parseFloat(elements.stabilitySlider.value),
+                    similarity_boost: parseFloat(elements.similarityBoostSlider.value),
+                    style: parseFloat(elements.styleSlider.value)
+                }
+            })
+        };
+
+        // First request for high-quality audio
+        const highQualityResponse = await fetch(
+            `https://api.elevenlabs.io/v1/text-to-speech/${elements.voiceId.value}?output_format=mp3_44100_128`,
+            requestOptions
         );
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        if (!highQualityResponse.ok) {
+            throw new Error(`HTTP error! status: ${highQualityResponse.status}`);
         }
-        //Default Audio Player
-        // 1. Get the audio data from the API response
-        const audioBlob = await response.blob();
+
+        // Second request for telephone quality audio
+        const telephoneQualityResponse = await fetch(
+            `https://api.elevenlabs.io/v1/text-to-speech/${elements.voiceId.value}?output_format=pcm_8000`,
+            requestOptions
+        );
+
+        if (!telephoneQualityResponse.ok) {
+            throw new Error(`HTTP error! status: ${telephoneQualityResponse.status}`);
+        }
+
+        // Process high-quality audio
+        const audioBlob = await highQualityResponse.blob();
         currentAudioBlob = audioBlob;
         // 2. Create a URL for the audio blob
         const audioUrl = URL.createObjectURL(audioBlob);
-        // 3. Set up the audio player
-        elements.audioPlayer.src = audioUrl;  // Set the audio source
-       
-        // elements.audioPlayer.play();  // Start playing
+        elements.audioPlayer.src = audioUrl;
 
-        //Telephone Audio Player
-        telephoneAudioBlob = await convertPCM(audioBlob);
+        // Process telephone quality audio
+        const tempTelephoneAudioBlob = await telephoneQualityResponse.blob();
+        // Convert PCM to MP3 for telephone audio and assign to global variable
+        telephoneAudioBlob = await convertPCM(tempTelephoneAudioBlob);
         const telephoneAudioUrl = URL.createObjectURL(telephoneAudioBlob);
         elements.audioPlayerTelephone.src = telephoneAudioUrl; // Set the audio source
         
@@ -249,101 +261,18 @@ async function generateVoice() {
     }
 }
 
-// This function uses the Web Audio API, which implements Audio Graphs as an Audio Processing Pipeline
-// https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Basic_concepts_behind_Web_Audio_API#audio_graphs
-
-
-// AudioBuffer represents the raw audio data that can be processed by the Web Audio API.
-// The OfflineAudioContext is used to render audio data offline, allowing for processing without real-time playback.
-// We're using the OfflineAudioContext to change the sample rate of the audio data. Since AudioBuffers are immutable,
-// we need to create a new Buffer. Since we're not playing the audio directly but processing it,
-// we use the OfflineAudioContext to render the audio data offline.
-// The source node is used to transfer audio data from the original Buffer (old sample rate) to the new Buffer (new sample rate).
-
-// Audio Buffers, frames, and channels are explained here: 
-// https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Basic_concepts_behind_Web_Audio_API#audio_buffers_frames_samples_and_channels
-// The Web Audio API cannot encode MP3 directly, so we use lamejs to encode the audio data to MP3 format
-async function convertToTelephoneSampleRate(audioBlob) {
-    try {
-        // Audio context is required for using the Web Audio API
-        // We prepare an audioBuffer since only the audioBuffer can have its sample rate changed
-        
-        const audioContext = new AudioContext();
-        const audioBuffer = await audioContext.decodeAudioData(await audioBlob.arrayBuffer()); // Decodes audio data to a format that can be processed by the Web Audio API
-        const targetRate = 8000;
-
-        // Create offline context with new sample rate 
-        // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API#offlinebackground_audio_processing
-        const offlineCtx = new OfflineAudioContext(
-            1, // mono
-            Math.round(audioBuffer.length * (8000 / audioBuffer.sampleRate)), // Calculate new length based on target sample rate: https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext/length
-            8000 // Set target sample rate to 8000Hz (telephone quality)
-        );
-
-        // To feed audio data through the processing pipeline, we create a source node with our audioBuffer
-        // Reference: https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer#example
-        const source = offlineCtx.createBufferSource(); // https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode
-        source.buffer = audioBuffer;
-
-        //Add Low-Pass Filter  
-        // const antiAliasingFilter = offlineCtx.createBiquadFilter();
-        // antiAliasingFilter.type = 'lowpass';
-        // antiAliasingFilter.frequency.setValueAtTime(2000, offlineCtx.currentTime); // Just below 4kHz (Nyquist frequency for 8kHz)
-        // antiAliasingFilter.Q.setValueAtTime(0.7, offlineCtx.currentTime); // Gentle rolloff
-
-
-        // Connect the source to the destination to establish the audio pipeline
-        // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Using_Web_Audio_API#modifying_sound
-        source.connect(offlineCtx.destination); // Connect audio pipeline to destination
-        source.start(); // Send audio through the audio pipeline/graph to the destination we just set up
-
-        // Start rendering performs the actual conversion
-        const renderedBuffer = await offlineCtx.startRendering(); // Apply changes and render to a new AudioBuffer with the new sample rate
-        
-        // renderedBuffer is our new AudioBuffer with the new sample rate (8000Hz)
-        // Now this data needs to be encoded to MP3 format using lamejs
-        
-        const inputData = renderedBuffer.getChannelData(0); // Get mono channel data
-
-        // Convert float32 to Int16Array as required by lamejs
-        // https://github.com/zhuker/lamejs#usage -> lamejs expects 16-bit PCM samples
-        const samples = new Int16Array(inputData.length);
-        for (let i = 0; i < inputData.length; i++) {
-            samples[i] = inputData[i] * 32767; // Convert from [-1.0, +1.0] float range to [-32768, +32767] int16 range
-        }
-
-        // Create MP3 encoder with the telephone quality sample rate
-        // Code follows the Quick Start Guide of lamejs:
-        const mp3encoder = new lamejs.Mp3Encoder( // Using lamejs for MP3 encoding
-            1,           // channels (mono)
-            targetRate,  // sample rate (8000Hz for telephone quality)
-            64           // bitrate (low for telephone quality)
-        );
-
-        // Encode and combine
-        const mp3Data = mp3encoder.encodeBuffer(samples); // Encode the samples to MP3 format
-        const mp3Final = mp3encoder.flush(); // Finalize the encoding process
-
-        return new Blob([mp3Data, mp3Final], { type: 'audio/mp3' });
-    } catch (error) {
-        console.error('Error:', error);
-        throw error;
-    }
-}
-
 async function convertPCM(audioBlob) {
     try {
-           // Since we're already getting PCM at 8kHz, no conversion needed!
+           // Since we're already getting PCM at 8kHz, we dont need any conversion or any audio pipeline processing
         const arrayBuffer = await audioBlob.arrayBuffer();
-        
-        // PCM 8000 from ElevenLabs is likely 16-bit integers
         const pcmData = new Int16Array(arrayBuffer);
         
-        // Create MP3 encoder for 8kHz
+        // code: https://github.com/zhuker/lamejs#quick-start
+        // Create MP3 encoder for 8kHz and mono audio
         const mp3encoder = new lamejs.Mp3Encoder(
             1,    // mono
             8000, // 8kHz (matches input)
-            64    // Higher bitrate since we're not double-compressing
+            64    //bitrate
         );
 
         // Encode directly to MP3
@@ -444,4 +373,88 @@ function generateShareableUrl(includeApiKey = false) {
     const url = new URL(window.location.href);
     url.search = `?${PARAM_KEY}=${base64Config}`;
     return url.toString();
+}
+
+//the code below is no longer used, but kept for reference
+
+// This function uses the Web Audio API, which implements Audio Graphs as an Audio Processing Pipeline
+// https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Basic_concepts_behind_Web_Audio_API#audio_graphs
+
+
+// AudioBuffer represents the raw audio data that can be processed by the Web Audio API.
+// The OfflineAudioContext is used to render audio data offline, allowing for processing without real-time playback.
+// We're using the OfflineAudioContext to change the sample rate of the audio data. Since AudioBuffers are immutable,
+// we need to create a new Buffer. Since we're not playing the audio directly but processing it,
+// we use the OfflineAudioContext to render the audio data offline.
+// The source node is used to transfer audio data from the original Buffer (old sample rate) to the new Buffer (new sample rate).
+
+// Audio Buffers, frames, and channels are explained here: 
+// https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Basic_concepts_behind_Web_Audio_API#audio_buffers_frames_samples_and_channels
+// The Web Audio API cannot encode MP3 directly, so we use lamejs to encode the audio data to MP3 format
+async function convertToTelephoneSampleRate(audioBlob) {
+    try {
+        // Audio context is required for using the Web Audio API
+        // We prepare an audioBuffer since only the audioBuffer can have its sample rate changed
+        
+        const audioContext = new AudioContext();
+        const audioBuffer = await audioContext.decodeAudioData(await audioBlob.arrayBuffer()); // Decodes audio data to a format that can be processed by the Web Audio API
+        const targetRate = 8000;
+
+        // Create offline context with new sample rate 
+        // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API#offlinebackground_audio_processing
+        const offlineCtx = new OfflineAudioContext(
+            1, // mono
+            Math.round(audioBuffer.length * (8000 / audioBuffer.sampleRate)), // Calculate new length based on target sample rate: https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext/length
+            8000 // Set target sample rate to 8000Hz (telephone quality)
+        );
+
+        // To feed audio data through the processing pipeline, we create a source node with our audioBuffer
+        // Reference: https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer#example
+        const source = offlineCtx.createBufferSource(); // https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode
+        source.buffer = audioBuffer;
+
+        //Add Low-Pass Filter  
+        // const antiAliasingFilter = offlineCtx.createBiquadFilter();
+        // antiAliasingFilter.type = 'lowpass';
+        // antiAliasingFilter.frequency.setValueAtTime(2000, offlineCtx.currentTime); // Just below 4kHz (Nyquist frequency for 8kHz)
+        // antiAliasingFilter.Q.setValueAtTime(0.7, offlineCtx.currentTime); // Gentle rolloff
+
+
+        // Connect the source to the destination to establish the audio pipeline
+        // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Using_Web_Audio_API#modifying_sound
+        source.connect(offlineCtx.destination); // Connect audio pipeline to destination
+        source.start(); // Send audio through the audio pipeline/graph to the destination we just set up
+
+        // Start rendering performs the actual conversion
+        const renderedBuffer = await offlineCtx.startRendering(); // Apply changes and render to a new AudioBuffer with the new sample rate
+        
+        // renderedBuffer is our new AudioBuffer with the new sample rate (8000Hz)
+        // Now this data needs to be encoded to MP3 format using lamejs
+        
+        const inputData = renderedBuffer.getChannelData(0); // Get mono channel data
+
+        // Convert float32 to Int16Array as required by lamejs
+        // https://github.com/zhuker/lamejs#usage -> lamejs expects 16-bit PCM samples
+        const samples = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+            samples[i] = inputData[i] * 32767; // Convert from [-1.0, +1.0] float range to [-32768, +32767] int16 range
+        }
+
+        // Create MP3 encoder with the telephone quality sample rate
+        // Code follows the Quick Start Guide of lamejs:
+        const mp3encoder = new lamejs.Mp3Encoder( // Using lamejs for MP3 encoding
+            1,           // channels (mono)
+            targetRate,  // sample rate (8000Hz for telephone quality)
+            64           // bitrate (low for telephone quality)
+        );
+
+        // Encode and combine
+        const mp3Data = mp3encoder.encodeBuffer(samples); // Encode the samples to MP3 format
+        const mp3Final = mp3encoder.flush(); // Finalize the encoding process
+
+        return new Blob([mp3Data, mp3Final], { type: 'audio/mp3' });
+    } catch (error) {
+        console.error('Error:', error);
+        throw error;
+    }
 }
