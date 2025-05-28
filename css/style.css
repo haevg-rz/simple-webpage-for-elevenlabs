@@ -17,6 +17,10 @@ textarea {
     border-radius: 0.25rem;
 }
 
-#audioPlayer {
+#audioPlayer, #audioPlayerTelephone {
     width: 100%;
+}
+
+.sliders-loading {
+    visibility: hidden;
 }
