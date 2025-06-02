@@ -2,9 +2,6 @@
 let currentAudioBlob = null;
 let telephoneAudioBlob = null;
 
-
-
-
 const DEFAULT_VALUES = {
     modelId: 'eleven_multilingual_v2',
     voiceId: 'y8FeN9lFTEmQOYCaE07F',
@@ -64,9 +61,6 @@ const elements = {
     styleValueDisplay: document.getElementById('styleValueDisplay')
 };
 
-
-
-
 document.addEventListener('DOMContentLoaded', () => {
     loadParametersFromUrl();
     loadStoredValues();
@@ -90,6 +84,8 @@ function loadStoredValues() {
     loadSliderValuesAndUpdateDisplay(elements.stabilitySlider, elements.stabilityValueDisplay, STORAGE_KEYS.stability, DEFAULT_VALUES.stability);
     loadSliderValuesAndUpdateDisplay(elements.similarityBoostSlider, elements.similarityBoostValueDisplay, STORAGE_KEYS.similarityBoost, DEFAULT_VALUES.similarityBoost);
     loadSliderValuesAndUpdateDisplay(elements.styleSlider, elements.styleValueDisplay, STORAGE_KEYS.style, DEFAULT_VALUES.style);
+
+    //changeThumbRangeAppearenceOnDefault(elements.speedSlider, )
 
     // if (elements.speedSlider && elements.speedValueDisplay) { //in case the script is loaded in the wrong order
     //     elements.speedSlider.value = localStorage.getItem(STORAGE_KEYS.speed) || DEFAULT_VALUES.speed; //lade das gespeicherte speed unter storage key, wenn das nicht funktioniert nutze das default value
@@ -115,11 +111,13 @@ function loadStoredValues() {
     }
 }
 
-function loadSliderValuesAndUpdateDisplay(slider, sliderDisplay, storageKeyRef, defualtValueRef)
+function loadSliderValuesAndUpdateDisplay(slider, sliderDisplay, storageKeyRef, defaultValueRef)
 {
      if (slider && sliderDisplay) { //in case the script is loaded in the wrong order
-        slider.value = localStorage.getItem(storageKeyRef) || defualtValueRef; //lade das gespeicherte speed unter storage key, wenn das nicht funktioniert nutze das default value
+        slider.value = localStorage.getItem(storageKeyRef) || defaultValueRef; //lade das gespeicherte speed unter storage key, wenn das nicht funktioniert nutze das default value
         sliderDisplay.textContent = slider.value;
+        changeThumbRangeAppearenceOnDefault(slider, defaultValueRef);
+
     }
 }
 
@@ -128,21 +126,20 @@ function updateSliderValuesOnInput(Slider, SliderValueDisplay, SliderDefaultValu
         Slider.addEventListener('input', () => {
             SliderValueDisplay.textContent = Slider.value; // Update the display value
             localStorage.setItem(SliderStorageValue, Slider.value); // Save speed to localStorage, every time the slider is moved
-            
-            //change Slider Color if slider is at default value
-            if(Slider.value == SliderDefaultValue) 
-            {
-                Slider.classList.add('at-default-value');
-            }else{
-                Slider.classList.remove('at-default-value');
-            }
+            changeThumbRangeAppearenceOnDefault(Slider, SliderDefaultValue);
         });
     }
 }
 
-// function setSliderDefaultAppearance(Slider)
-// {
-// }
+function changeThumbRangeAppearenceOnDefault(Slider, SliderDefaultValue)
+{
+    if(Slider.value == SliderDefaultValue) 
+            {
+                Slider.classList.add('at-default-value'); //modifies css property changing the color
+            }else{
+                Slider.classList.remove('at-default-value');
+            }
+}
 
 function setupEventListeners() {
     elements.saveApiKey.addEventListener('click', saveApiKey);
