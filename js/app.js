@@ -370,6 +370,7 @@ function loadParametersFromUrl() {
 }
 
 function applyConfig(config) {
+    // setupConfig(config.apiKey);
     if (config.apiKey) {
         elements.apiKey.value = config.apiKey;
         saveApiKey();
@@ -390,6 +391,13 @@ function applyConfig(config) {
         elements.text.value = config.text;
     }
 }
+// function setupConfig(configRef) //incomplete
+// {
+//      if (configRef) {
+//         configRef.value = configRef;
+//         saveApiKey();
+//      }
+// }
 
 function generateShareableUrl(includeApiKey = false) {
     const config = {
@@ -405,6 +413,6 @@ function generateShareableUrl(includeApiKey = false) {
 
     const base64Config = btoa(JSON.stringify(config));
     const url = new URL(window.location.href);
-    url.search = `?${PARAM_KEY}=${base64Config}`;
+    url.hash = `?${PARAM_KEY}=${base64Config}`;
     return url.toString();
     }
