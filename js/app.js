@@ -94,29 +94,29 @@ function loadStoredValues() {
     }
 }
 
-function loadSliderValuesAndUpdateDisplay(slider, sliderDisplay, storageKeyRef, defaultValueRef) {
+function loadSliderValuesAndUpdateDisplay(slider, sliderDisplay, storageKey, sliderDefaultValue) {
     if (slider && sliderDisplay) { //in case the script is loaded in the wrong order
-        slider.value = localStorage.getItem(storageKeyRef) || defaultValueRef; //load the stored value from localStorage using the storage key, if that fails use the default value
+        slider.value = localStorage.getItem(storageKey) || sliderDefaultValue; //load the stored value from localStorage using the storage key, if that fails use the default value
         sliderDisplay.textContent = slider.value;
-        changeThumbRangeAppearenceOnDefault(slider, defaultValueRef);
+        changeThumbRangeAppearanceOnDefault(slider, sliderDefaultValue);
     }
 }
 
-function setupSlidersWithEvents(Slider, SliderValueDisplay, SliderDefaultValue, SliderStorageValue) { // update Slider values as well as the text display values of those Sliders
-    if (Slider && SliderValueDisplay) {
-        Slider.addEventListener('input', () => {
-            SliderValueDisplay.textContent = Slider.value; // Update the display value
-            localStorage.setItem(SliderStorageValue, Slider.value); // Save speed to localStorage, every time the slider is moved
-            changeThumbRangeAppearenceOnDefault(Slider, SliderDefaultValue);
+function setupSlidersWithEvents(slider, sliderValueDisplay, sliderDefaultValue, storageKey) { // update Slider values as well as the text display values of those Sliders
+    if (slider && sliderValueDisplay) {
+        slider.addEventListener('input', () => {
+            sliderValueDisplay.textContent = slider.value; // Update the display value
+            localStorage.setItem(storageKey, slider.value); // Save speed to localStorage, every time the slider is moved
+            changeThumbRangeAppearanceOnDefault(slider, sliderDefaultValue);
         });
     }
 }
 
-function changeThumbRangeAppearenceOnDefault(Slider, SliderDefaultValue) {
-    if (Slider.value == SliderDefaultValue) {
-        Slider.classList.add('at-default-value'); //modifies css property changing the color
+function changeThumbRangeAppearanceOnDefault(slider, sliderDefaultValue) {
+    if (slider.value == sliderDefaultValue) {
+        slider.classList.add('at-default-value'); //modifies css property changing the color
     } else {
-        Slider.classList.remove('at-default-value');
+        slider.classList.remove('at-default-value');
     }
 }
 
