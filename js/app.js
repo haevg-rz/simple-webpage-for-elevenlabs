@@ -1,3 +1,10 @@
+//Global Variables
+let currentAudioBlob = null;
+let telephoneAudioBlob = null;
+
+
+
+
 const DEFAULT_VALUES = {
     modelId: 'eleven_multilingual_v2',
     voiceId: 'y8FeN9lFTEmQOYCaE07F',
@@ -29,17 +36,17 @@ const elements = {
     removeApiKey: document.getElementById('removeApiKey'),
     text: document.getElementById('text'),
     previousText: document.getElementById('previousText'),
-    modelId: document.getElementById('modelId'),
+    modelId: document.getElementById('modelId'), //modelId is the model to use for text to speech
     voiceId: document.getElementById('voiceId'),
     resetParams: document.getElementById('resetParams'),
     generateVoice: document.getElementById('generateVoice'),
-    
+
     audioSection: document.getElementById('audioSection'), //Setup Audio Section
 
     // Default Audio Player Elements
     audioPlayer: document.getElementById('audioPlayer'),
     downloadAudio: document.getElementById('downloadAudio'),
-    
+
     // Telephone Audio Player Elements
     audioPlayerTelephone: document.getElementById('audioPlayerTelephone'),
     downloadAudioTelephone: document.getElementById('downloadAudioTelephone'),
@@ -57,8 +64,8 @@ const elements = {
     styleValueDisplay: document.getElementById('styleValueDisplay')
 };
 
-let currentAudioBlob = null;
-let telephoneAudioBlob = null; 
+
+
 
 document.addEventListener('DOMContentLoaded', () => {
     loadParametersFromUrl();
@@ -77,35 +84,63 @@ function loadStoredValues() {
     elements.voiceId.value = localStorage.getItem(STORAGE_KEYS.voiceId) || DEFAULT_VALUES.voiceId;
     elements.previousText.value = localStorage.getItem(STORAGE_KEYS.previousText) || DEFAULT_VALUES.previousText;
 
-     // Load slider values and update their displays
-    if (elements.speedSlider && elements.speedValueDisplay) { //in case the script is loaded in the wrong order
-        elements.speedSlider.value = localStorage.getItem(STORAGE_KEYS.speed) || DEFAULT_VALUES.speed; //lade das gespeicherte speed unter storage key, wenn das nicht funktioniert nutze das default value
-        elements.speedValueDisplay.textContent = elements.speedSlider.value;
-    }
-    if (elements.stabilitySlider && elements.stabilityValueDisplay) {
-        elements.stabilitySlider.value = localStorage.getItem(STORAGE_KEYS.stability) || DEFAULT_VALUES.stability;
-        elements.stabilityValueDisplay.textContent = elements.stabilitySlider.value;
-    }
-    if (elements.similarityBoostSlider && elements.similarityBoostValueDisplay) {
-        elements.similarityBoostSlider.value = localStorage.getItem(STORAGE_KEYS.similarityBoost) || DEFAULT_VALUES.similarityBoost;
-        elements.similarityBoostValueDisplay.textContent = elements.similarityBoostSlider.value;
-    }
-    if (elements.styleSlider && elements.styleValueDisplay) {
-        elements.styleSlider.value = localStorage.getItem(STORAGE_KEYS.style) || DEFAULT_VALUES.style;
-        elements.styleValueDisplay.textContent = elements.styleSlider.value;
-    }
+    // Load slider values and update their displays in case the script is loaded in the wrong order
+
+    loadSliderValuesAndUpdateDisplay(elements.speedSlider, elements.speedValueDisplay, STORAGE_KEYS.speed, DEFAULT_VALUES.speed);
+    loadSliderValuesAndUpdateDisplay(elements.stabilitySlider, elements.stabilityValueDisplay, STORAGE_KEYS.stability, DEFAULT_VALUES.stability);
+    loadSliderValuesAndUpdateDisplay(elements.similarityBoostSlider, elements.similarityBoostValueDisplay, STORAGE_KEYS.similarityBoost, DEFAULT_VALUES.similarityBoost);
+    loadSliderValuesAndUpdateDisplay(elements.styleSlider, elements.styleValueDisplay, STORAGE_KEYS.style, DEFAULT_VALUES.style);
+
+    // if (elements.speedSlider && elements.speedValueDisplay) { //in case the script is loaded in the wrong order
+    //     elements.speedSlider.value = localStorage.getItem(STORAGE_KEYS.speed) || DEFAULT_VALUES.speed; //lade das gespeicherte speed unter storage key, wenn das nicht funktioniert nutze das default value
+    //     elements.speedValueDisplay.textContent = elements.speedSlider.value;
+    // }
+    // if (elements.stabilitySlider && elements.stabilityValueDisplay) {
+    //     elements.stabilitySlider.value = localStorage.getItem(STORAGE_KEYS.stability) || DEFAULT_VALUES.stability;
+    //     elements.stabilityValueDisplay.textContent = elements.stabilitySlider.value;
+    // }
+    // if (elements.similarityBoostSlider && elements.similarityBoostValueDisplay) {
+    //     elements.similarityBoostSlider.value = localStorage.getItem(STORAGE_KEYS.similarityBoost) || DEFAULT_VALUES.similarityBoost;
+    //     elements.similarityBoostValueDisplay.textContent = elements.similarityBoostSlider.value;
+    // }
+    // if (elements.styleSlider && elements.styleValueDisplay) {
+    //     elements.styleSlider.value = localStorage.getItem(STORAGE_KEYS.style) || DEFAULT_VALUES.style;
+    //     elements.styleValueDisplay.textContent = elements.styleSlider.value;
+    // }
 
     //ake sliders visible after local Storage values are set
     const slidersContainer = document.getElementById('voiceSettingsSliders'); //html id of all sliders
-    if (slidersContainer) { 
+    if (slidersContainer) {
         slidersContainer.classList.remove('sliders-loading'); //remove css class hiding sliders
+    }
+}
+
+function loadSliderValuesAndUpdateDisplay(slider, sliderDisplay, storageKeyRef, defualtValueRef)
+{
+     if (slider && sliderDisplay) { //in case the script is loaded in the wrong order
+        slider.value = localStorage.getItem(storageKeyRef) || defualtValueRef; //lade das gespeicherte speed unter storage key, wenn das nicht funktioniert nutze das default value
+        sliderDisplay.textContent = slider.value;
+    }
+}
+
+function updateSliderValuesOnInput(Slider, SliderValueDisplay, SliderDefaultValue) { // update Slider values as well as the text display values of those Sliders
+    if (Slider && SliderValueDisplay) {
+        Slider.addEventListener('input', () => {
+            SliderValueDisplay.textContent = SliderValueDisplay.value; // Update the display value
+            localStorage.setItem(STORAGE_KEYS.speed, Slider.value); // Save speed to localStorage, every time the slider is moved
+
+            if(Slider.value == SliderDefaultValue)
+            {
+                setSliderDefaultAppearance();
+            }
+        });
     }
 }
 
 function setupEventListeners() {
     elements.saveApiKey.addEventListener('click', saveApiKey);
     elements.removeApiKey.addEventListener('click', removeApiKey);
-    elements.resetParams.addEventListener('click', resetParameters);
+    elements.resetParams.addEventListener('click', resetParameters); //works calls correctyl 
     elements.generateVoice.addEventListener('click', generateVoice);
     elements.downloadAudio.addEventListener('click', downloadAudio);
     elements.downloadAudioTelephone.addEventListener('click', downloadAudioTelephone);
@@ -113,34 +148,14 @@ function setupEventListeners() {
     elements.modelId.addEventListener('change', () => localStorage.setItem(STORAGE_KEYS.modelId, elements.modelId.value));
     elements.voiceId.addEventListener('change', () => localStorage.setItem(STORAGE_KEYS.voiceId, elements.voiceId.value));
     elements.previousText.addEventListener('change', () => localStorage.setItem(STORAGE_KEYS.previousText, elements.previousText.value));
-    
-    //update slider values
-     if (elements.speedSlider && elements.speedValueDisplay) {
-        elements.speedSlider.addEventListener('input', () => {
-            elements.speedValueDisplay.textContent = elements.speedSlider.value; // Update the display value
-            localStorage.setItem(STORAGE_KEYS.speed, elements.speedSlider.value); // Save speed to localStorage, every time the slider is moved
-        });
-    }
-    if (elements.stabilitySlider && elements.stabilityValueDisplay) { 
-        elements.stabilitySlider.addEventListener('input', () => {
-            elements.stabilityValueDisplay.textContent = elements.stabilitySlider.value;
-            localStorage.setItem(STORAGE_KEYS.stability, elements.stabilitySlider.value); 
-        });
-    }
-    if (elements.similarityBoostSlider && elements.similarityBoostValueDisplay) { 
-        elements.similarityBoostSlider.addEventListener('input', () => {
-            elements.similarityBoostValueDisplay.textContent = elements.similarityBoostSlider.value;
-            localStorage.setItem(STORAGE_KEYS.similarityBoost, elements.similarityBoostSlider.value); 
-        });
-    }
-    if (elements.styleSlider && elements.styleValueDisplay) { 
-        elements.styleSlider.addEventListener('input', () => {
-            elements.styleValueDisplay.textContent = elements.styleSlider.value;
-            localStorage.setItem(STORAGE_KEYS.style, elements.styleSlider.value); 
-        });
-    } 
 
-     // Initialize Bootstrap Tooltips
+    //update slider values
+    updateSliderValuesOnInput(elements.speedSlider, elements.speedValueDisplay);
+    updateSliderValuesOnInput(elements.stabilitySlider, elements.stabilityValueDisplay);
+    updateSliderValuesOnInput(elements.similarityBoostSlider, elements.similarityBoostValueDisplay);
+    updateSliderValuesOnInput(elements.styleSlider, elements.styleValueDisplay);
+
+    // Initialize Bootstrap Tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
@@ -154,6 +169,10 @@ function setupEventListeners() {
             .catch(err => console.error('Failed to copy URL:', err));
     });
 }
+
+// function changeSliderAppearanceOnDefault(Slider) {
+//     if(Slider.value == D)
+// }
 
 function saveApiKey() {
     const apiKey = elements.apiKey.value.trim();
@@ -170,13 +189,31 @@ function removeApiKey() {
 }
 
 function resetParameters() {
+    // Reset text input values
     elements.modelId.value = DEFAULT_VALUES.modelId;
     elements.voiceId.value = DEFAULT_VALUES.voiceId;
     elements.previousText.value = DEFAULT_VALUES.previousText;
 
+    // Reset slider values
+    elements.speedSlider.value = DEFAULT_VALUES.speed;
+    elements.stabilitySlider.value = DEFAULT_VALUES.stability;
+    elements.similarityBoostSlider.value = DEFAULT_VALUES.similarityBoost;
+    elements.styleSlider.value = DEFAULT_VALUES.style;
+
+    // Update slider display values
+    elements.speedValueDisplay.textContent = DEFAULT_VALUES.speed;
+    elements.stabilityValueDisplay.textContent = DEFAULT_VALUES.stability;
+    elements.similarityBoostValueDisplay.textContent = DEFAULT_VALUES.similarityBoost;
+    elements.styleValueDisplay.textContent = DEFAULT_VALUES.style;
+
+    // Update localStorage for all values
     localStorage.setItem(STORAGE_KEYS.modelId, DEFAULT_VALUES.modelId);
     localStorage.setItem(STORAGE_KEYS.voiceId, DEFAULT_VALUES.voiceId);
     localStorage.setItem(STORAGE_KEYS.previousText, DEFAULT_VALUES.previousText);
+    localStorage.setItem(STORAGE_KEYS.speed, DEFAULT_VALUES.speed);
+    localStorage.setItem(STORAGE_KEYS.stability, DEFAULT_VALUES.stability);
+    localStorage.setItem(STORAGE_KEYS.similarityBoost, DEFAULT_VALUES.similarityBoost);
+    localStorage.setItem(STORAGE_KEYS.style, DEFAULT_VALUES.style);
 }
 
 async function generateVoice() {
@@ -196,7 +233,7 @@ async function generateVoice() {
     elements.generateVoice.textContent = 'Generating...';
 
     try {
-        // Common request options
+        // Setup Variables
         const requestOptions = {
             method: 'POST',
             headers: {
@@ -215,42 +252,22 @@ async function generateVoice() {
                 }
             })
         };
+        const highQualityRequest = `https://api.elevenlabs.io/v1/text-to-speech/${elements.voiceId.value}?output_format=mp3_44100_128`;
+        const telephoneQualityRequest = `https://api.elevenlabs.io/v1/text-to-speech/${elements.voiceId.value}?output_format=pcm_8000`;
+        let highQualityResponse = null;
+        let telephoneQualityResponse = null;
 
-        // First request for high-quality audio
-        const highQualityResponse = await fetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${elements.voiceId.value}?output_format=mp3_44100_128`,
-            requestOptions
-        );
-
-        if (!highQualityResponse.ok) {
-            throw new Error(`HTTP error! status: ${highQualityResponse.status}`);
+        let includeTelephoneAudio = document.getElementById('includeTelephoneAudio').checked; //checkbox if telephone audio is included
+        if (includeTelephoneAudio) {
+            // Parallel API calls for high-quality and telephone-quality audio
+            [highQualityResponse, telephoneQualityResponse] = await Promise.all([
+                fetch(highQualityRequest, requestOptions),
+                fetch(telephoneQualityRequest, requestOptions)]);
+        } else {
+            highQualityResponse = await fetch(highQualityRequest, requestOptions);
         }
-
-        // Second request for telephone quality audio
-        const telephoneQualityResponse = await fetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${elements.voiceId.value}?output_format=pcm_8000`,
-            requestOptions
-        );
-
-        if (!telephoneQualityResponse.ok) {
-            throw new Error(`HTTP error! status: ${telephoneQualityResponse.status}`);
-        }
-
-        // Process high-quality audio
-        const audioBlob = await highQualityResponse.blob();
-        currentAudioBlob = audioBlob;
-        // 2. Create a URL for the audio blob
-        const audioUrl = URL.createObjectURL(audioBlob);
-        elements.audioPlayer.src = audioUrl;
-
-        // Process telephone quality audio
-        const tempTelephoneAudioBlob = await telephoneQualityResponse.blob();
-        // Convert PCM to MP3 for telephone audio and assign to global variable
-        telephoneAudioBlob = await convertPCM(tempTelephoneAudioBlob);
-        const telephoneAudioUrl = URL.createObjectURL(telephoneAudioBlob);
-        elements.audioPlayerTelephone.src = telephoneAudioUrl; // Set the audio source
-        
-        
+        handleAPIRequestExceptions(includeTelephoneAudio, highQualityResponse, telephoneQualityResponse);
+        prepareAudioForDownload(includeTelephoneAudio, highQualityResponse, telephoneQualityResponse);
         elements.audioSection.classList.remove('d-none'); // Make both players visible when audio is generated
 
     } catch (error) {
@@ -261,12 +278,40 @@ async function generateVoice() {
     }
 }
 
+function handleAPIRequestExceptions(includeTelephone, highQualityResponse, telephoneQualityResponse) {
+    if (!highQualityResponse.ok) {
+        throw new Error(`HTTP error! status: ${highQualityResponse.status}`);
+    }
+    if (includeTelephone) {
+        if (!telephoneQualityResponse.ok) {
+            throw new Error(`HTTP error! status: ${telephoneQualityResponse.status}`);
+        }
+    }
+}
+
+async function prepareAudioForDownload(includeTelephone, highQualityResponse, telephoneQualityResponse) {
+    // Process high-quality audio
+    const audioBlob = await highQualityResponse.blob();
+    currentAudioBlob = audioBlob;
+    // 2. Create a URL for the audio blob
+    const audioUrl = URL.createObjectURL(audioBlob);
+    elements.audioPlayer.src = audioUrl;
+    if (includeTelephone) {
+        // Process telephone quality audio
+        const tempTelephoneAudioBlob = await telephoneQualityResponse.blob();
+        // Convert PCM to MP3 for telephone audio and assign to global variable
+        telephoneAudioBlob = await convertPCM(tempTelephoneAudioBlob);
+        const telephoneAudioUrl = URL.createObjectURL(telephoneAudioBlob);
+        elements.audioPlayerTelephone.src = telephoneAudioUrl; // Set the audio source
+    }
+}
+
 async function convertPCM(audioBlob) {
     try {
-           // Since we're already getting PCM at 8kHz, we dont need any conversion or any audio pipeline processing
+        // Since we're already getting PCM at 8kHz, we dont need any conversion or any audio pipeline processing
         const arrayBuffer = await audioBlob.arrayBuffer();
         const pcmData = new Int16Array(arrayBuffer);
-        
+
         // code: https://github.com/zhuker/lamejs#quick-start
         // Create MP3 encoder for 8kHz and mono audio
         const mp3encoder = new lamejs.Mp3Encoder(
@@ -302,8 +347,7 @@ function downloadAudio() {
     URL.revokeObjectURL(downloadUrl);
 }
 
-function downloadAudioTelephone() 
-{
+function downloadAudioTelephone() {
     if (!telephoneAudioBlob) {
         alert('No telephone audio available to download!');
         return;
@@ -373,88 +417,4 @@ function generateShareableUrl(includeApiKey = false) {
     const url = new URL(window.location.href);
     url.search = `?${PARAM_KEY}=${base64Config}`;
     return url.toString();
-}
-
-//the code below is no longer used, but kept for reference
-
-// This function uses the Web Audio API, which implements Audio Graphs as an Audio Processing Pipeline
-// https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Basic_concepts_behind_Web_Audio_API#audio_graphs
-
-
-// AudioBuffer represents the raw audio data that can be processed by the Web Audio API.
-// The OfflineAudioContext is used to render audio data offline, allowing for processing without real-time playback.
-// We're using the OfflineAudioContext to change the sample rate of the audio data. Since AudioBuffers are immutable,
-// we need to create a new Buffer. Since we're not playing the audio directly but processing it,
-// we use the OfflineAudioContext to render the audio data offline.
-// The source node is used to transfer audio data from the original Buffer (old sample rate) to the new Buffer (new sample rate).
-
-// Audio Buffers, frames, and channels are explained here: 
-// https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Basic_concepts_behind_Web_Audio_API#audio_buffers_frames_samples_and_channels
-// The Web Audio API cannot encode MP3 directly, so we use lamejs to encode the audio data to MP3 format
-async function convertToTelephoneSampleRate(audioBlob) {
-    try {
-        // Audio context is required for using the Web Audio API
-        // We prepare an audioBuffer since only the audioBuffer can have its sample rate changed
-        
-        const audioContext = new AudioContext();
-        const audioBuffer = await audioContext.decodeAudioData(await audioBlob.arrayBuffer()); // Decodes audio data to a format that can be processed by the Web Audio API
-        const targetRate = 8000;
-
-        // Create offline context with new sample rate 
-        // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API#offlinebackground_audio_processing
-        const offlineCtx = new OfflineAudioContext(
-            1, // mono
-            Math.round(audioBuffer.length * (8000 / audioBuffer.sampleRate)), // Calculate new length based on target sample rate: https://developer.mozilla.org/en-US/docs/Web/API/OfflineAudioContext/length
-            8000 // Set target sample rate to 8000Hz (telephone quality)
-        );
-
-        // To feed audio data through the processing pipeline, we create a source node with our audioBuffer
-        // Reference: https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer#example
-        const source = offlineCtx.createBufferSource(); // https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode
-        source.buffer = audioBuffer;
-
-        //Add Low-Pass Filter  
-        // const antiAliasingFilter = offlineCtx.createBiquadFilter();
-        // antiAliasingFilter.type = 'lowpass';
-        // antiAliasingFilter.frequency.setValueAtTime(2000, offlineCtx.currentTime); // Just below 4kHz (Nyquist frequency for 8kHz)
-        // antiAliasingFilter.Q.setValueAtTime(0.7, offlineCtx.currentTime); // Gentle rolloff
-
-
-        // Connect the source to the destination to establish the audio pipeline
-        // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Using_Web_Audio_API#modifying_sound
-        source.connect(offlineCtx.destination); // Connect audio pipeline to destination
-        source.start(); // Send audio through the audio pipeline/graph to the destination we just set up
-
-        // Start rendering performs the actual conversion
-        const renderedBuffer = await offlineCtx.startRendering(); // Apply changes and render to a new AudioBuffer with the new sample rate
-        
-        // renderedBuffer is our new AudioBuffer with the new sample rate (8000Hz)
-        // Now this data needs to be encoded to MP3 format using lamejs
-        
-        const inputData = renderedBuffer.getChannelData(0); // Get mono channel data
-
-        // Convert float32 to Int16Array as required by lamejs
-        // https://github.com/zhuker/lamejs#usage -> lamejs expects 16-bit PCM samples
-        const samples = new Int16Array(inputData.length);
-        for (let i = 0; i < inputData.length; i++) {
-            samples[i] = inputData[i] * 32767; // Convert from [-1.0, +1.0] float range to [-32768, +32767] int16 range
-        }
-
-        // Create MP3 encoder with the telephone quality sample rate
-        // Code follows the Quick Start Guide of lamejs:
-        const mp3encoder = new lamejs.Mp3Encoder( // Using lamejs for MP3 encoding
-            1,           // channels (mono)
-            targetRate,  // sample rate (8000Hz for telephone quality)
-            64           // bitrate (low for telephone quality)
-        );
-
-        // Encode and combine
-        const mp3Data = mp3encoder.encodeBuffer(samples); // Encode the samples to MP3 format
-        const mp3Final = mp3encoder.flush(); // Finalize the encoding process
-
-        return new Blob([mp3Data, mp3Final], { type: 'audio/mp3' });
-    } catch (error) {
-        console.error('Error:', error);
-        throw error;
     }
-}
