@@ -38,7 +38,9 @@ const elements = {
     resetParams: document.getElementById('resetParams'),
     generateVoice: document.getElementById('generateVoice'),
 
-    audioSection: document.getElementById('audioSection'), //Setup Audio Section
+    audioSectionQuality: document.getElementById('audioSectionQuality'), //Setup Audio Section
+    audioSectionTel: document.getElementById('audioSectionTel'), //Setup Audio Section
+
 
     // Default Audio Player Elements
     audioPlayer: document.getElementById('audioPlayer'),
@@ -84,25 +86,6 @@ function loadStoredValues() {
     loadSliderValuesAndUpdateDisplay(elements.stabilitySlider, elements.stabilityValueDisplay, STORAGE_KEYS.stability, DEFAULT_VALUES.stability);
     loadSliderValuesAndUpdateDisplay(elements.similarityBoostSlider, elements.similarityBoostValueDisplay, STORAGE_KEYS.similarityBoost, DEFAULT_VALUES.similarityBoost);
     loadSliderValuesAndUpdateDisplay(elements.styleSlider, elements.styleValueDisplay, STORAGE_KEYS.style, DEFAULT_VALUES.style);
-
-    //changeThumbRangeAppearenceOnDefault(elements.speedSlider, )
-
-    // if (elements.speedSlider && elements.speedValueDisplay) { //in case the script is loaded in the wrong order
-    //     elements.speedSlider.value = localStorage.getItem(STORAGE_KEYS.speed) || DEFAULT_VALUES.speed; //lade das gespeicherte speed unter storage key, wenn das nicht funktioniert nutze das default value
-    //     elements.speedValueDisplay.textContent = elements.speedSlider.value;
-    // }
-    // if (elements.stabilitySlider && elements.stabilityValueDisplay) {
-    //     elements.stabilitySlider.value = localStorage.getItem(STORAGE_KEYS.stability) || DEFAULT_VALUES.stability;
-    //     elements.stabilityValueDisplay.textContent = elements.stabilitySlider.value;
-    // }
-    // if (elements.similarityBoostSlider && elements.similarityBoostValueDisplay) {
-    //     elements.similarityBoostSlider.value = localStorage.getItem(STORAGE_KEYS.similarityBoost) || DEFAULT_VALUES.similarityBoost;
-    //     elements.similarityBoostValueDisplay.textContent = elements.similarityBoostSlider.value;
-    // }
-    // if (elements.styleSlider && elements.styleValueDisplay) {
-    //     elements.styleSlider.value = localStorage.getItem(STORAGE_KEYS.style) || DEFAULT_VALUES.style;
-    //     elements.styleValueDisplay.textContent = elements.styleSlider.value;
-    // }
 
     //ake sliders visible after local Storage values are set
     const slidersContainer = document.getElementById('voiceSettingsSliders'); //html id of all sliders
@@ -264,11 +247,15 @@ async function generateVoice() {
                 fetch(highQualityRequest, requestOptions),
                 fetch(telephoneQualityRequest, requestOptions)]);
         } else {
+            elements.audioSectionTel.classList.add('d-none'); // Make both players visible when audio is generated, d-none is bottstrap intern class
             highQualityResponse = await fetch(highQualityRequest, requestOptions);
         }
         handleAPIRequestExceptions(includeTelephoneAudio, highQualityResponse, telephoneQualityResponse);
         prepareAudioForDownload(includeTelephoneAudio, highQualityResponse, telephoneQualityResponse);
-        elements.audioSection.classList.remove('d-none'); // Make both players visible when audio is generated
+        
+
+        // elements.audioSection.classList.remove('addQualityAudio'); // Make both players visible when audio is generated
+
 
     } catch (error) {
         alert('Error generating voice: ' + error.message);
@@ -296,6 +283,7 @@ async function prepareAudioForDownload(includeTelephone, highQualityResponse, te
     // 2. Create a URL for the audio blob
     const audioUrl = URL.createObjectURL(audioBlob);
     elements.audioPlayer.src = audioUrl;
+    elements.audioSectionQuality.classList.remove('d-none'); // Make both players visible when audio is generated, d-none is bottstrap intern class
     if (includeTelephone) {
         // Process telephone quality audio
         const tempTelephoneAudioBlob = await telephoneQualityResponse.blob();
@@ -303,6 +291,8 @@ async function prepareAudioForDownload(includeTelephone, highQualityResponse, te
         telephoneAudioBlob = await convertPCM(tempTelephoneAudioBlob);
         const telephoneAudioUrl = URL.createObjectURL(telephoneAudioBlob);
         elements.audioPlayerTelephone.src = telephoneAudioUrl; // Set the audio source
+        elements.audioSectionTel.classList.remove('d-none'); // Make both players visible when audio is generated, d-none is bottstrap intern class
+
     }
 }
 
