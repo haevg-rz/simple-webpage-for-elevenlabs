@@ -94,17 +94,15 @@ function loadStoredValues() {
     }
 }
 
-function loadSliderValuesAndUpdateDisplay(slider, sliderDisplay, storageKeyRef, defaultValueRef)
-{
-     if (slider && sliderDisplay) { //in case the script is loaded in the wrong order
-        slider.value = localStorage.getItem(storageKeyRef) || defaultValueRef; //lade das gespeicherte speed unter storage key, wenn das nicht funktioniert nutze das default value
+function loadSliderValuesAndUpdateDisplay(slider, sliderDisplay, storageKeyRef, defaultValueRef) {
+    if (slider && sliderDisplay) { //in case the script is loaded in the wrong order
+        slider.value = localStorage.getItem(storageKeyRef) || defaultValueRef; //load the stored value from localStorage using the storage key, if that fails use the default value
         sliderDisplay.textContent = slider.value;
         changeThumbRangeAppearenceOnDefault(slider, defaultValueRef);
-
     }
 }
 
-function updateSliderValuesOnInput(Slider, SliderValueDisplay, SliderDefaultValue, SliderStorageValue) { // update Slider values as well as the text display values of those Sliders
+function setupSlidersWithEvents(Slider, SliderValueDisplay, SliderDefaultValue, SliderStorageValue) { // update Slider values as well as the text display values of those Sliders
     if (Slider && SliderValueDisplay) {
         Slider.addEventListener('input', () => {
             SliderValueDisplay.textContent = Slider.value; // Update the display value
@@ -114,14 +112,12 @@ function updateSliderValuesOnInput(Slider, SliderValueDisplay, SliderDefaultValu
     }
 }
 
-function changeThumbRangeAppearenceOnDefault(Slider, SliderDefaultValue)
-{
-    if(Slider.value == SliderDefaultValue) 
-            {
-                Slider.classList.add('at-default-value'); //modifies css property changing the color
-            }else{
-                Slider.classList.remove('at-default-value');
-            }
+function changeThumbRangeAppearenceOnDefault(Slider, SliderDefaultValue) {
+    if (Slider.value == SliderDefaultValue) {
+        Slider.classList.add('at-default-value'); //modifies css property changing the color
+    } else {
+        Slider.classList.remove('at-default-value');
+    }
 }
 
 function setupEventListeners() {
@@ -137,10 +133,10 @@ function setupEventListeners() {
     elements.previousText.addEventListener('change', () => localStorage.setItem(STORAGE_KEYS.previousText, elements.previousText.value));
 
     //update slider values
-    updateSliderValuesOnInput(elements.speedSlider, elements.speedValueDisplay, DEFAULT_VALUES.speed,STORAGE_KEYS.speed);
-    updateSliderValuesOnInput(elements.stabilitySlider, elements.stabilityValueDisplay, DEFAULT_VALUES.stability,STORAGE_KEYS.stability);
-    updateSliderValuesOnInput(elements.similarityBoostSlider, elements.similarityBoostValueDisplay,DEFAULT_VALUES.similarityBoost,STORAGE_KEYS.similarityBoost);
-    updateSliderValuesOnInput(elements.styleSlider, elements.styleValueDisplay, DEFAULT_VALUES.style, STORAGE_KEYS.style);
+    setupSlidersWithEvents(elements.speedSlider, elements.speedValueDisplay, DEFAULT_VALUES.speed, STORAGE_KEYS.speed);
+    setupSlidersWithEvents(elements.stabilitySlider, elements.stabilityValueDisplay, DEFAULT_VALUES.stability, STORAGE_KEYS.stability);
+    setupSlidersWithEvents(elements.similarityBoostSlider, elements.similarityBoostValueDisplay, DEFAULT_VALUES.similarityBoost, STORAGE_KEYS.similarityBoost);
+    setupSlidersWithEvents(elements.styleSlider, elements.styleValueDisplay, DEFAULT_VALUES.style, STORAGE_KEYS.style);
 
     // Initialize Bootstrap Tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -247,15 +243,11 @@ async function generateVoice() {
                 fetch(highQualityRequest, requestOptions),
                 fetch(telephoneQualityRequest, requestOptions)]);
         } else {
-            elements.audioSectionTel.classList.add('d-none'); // Make both players visible when audio is generated, d-none is bottstrap intern class
+            elements.audioSectionTel.classList.add('d-none'); // Hide telephone audio player when not generating telephone audio
             highQualityResponse = await fetch(highQualityRequest, requestOptions);
         }
-        handleAPIRequestExceptions(includeTelephoneAudio, highQualityResponse, telephoneQualityResponse);
-        prepareAudioForDownload(includeTelephoneAudio, highQualityResponse, telephoneQualityResponse);
-        
-
-        // elements.audioSection.classList.remove('addQualityAudio'); // Make both players visible when audio is generated
-
+        validateApiResponses(includeTelephoneAudio, highQualityResponse, telephoneQualityResponse);
+        processAudioResponses(includeTelephoneAudio, highQualityResponse, telephoneQualityResponse);
 
     } catch (error) {
         alert('Error generating voice: ' + error.message);
@@ -265,34 +257,34 @@ async function generateVoice() {
     }
 }
 
-function handleAPIRequestExceptions(includeTelephone, highQualityResponse, telephoneQualityResponse) {
+function validateApiResponses(includeTelephoneAudio, highQualityResponse, telephoneQualityResponse) {
     if (!highQualityResponse.ok) {
         throw new Error(`HTTP error! status: ${highQualityResponse.status}`);
     }
-    if (includeTelephone) {
+    if (includeTelephoneAudio) {
         if (!telephoneQualityResponse.ok) {
             throw new Error(`HTTP error! status: ${telephoneQualityResponse.status}`);
         }
     }
 }
 
-async function prepareAudioForDownload(includeTelephone, highQualityResponse, telephoneQualityResponse) {
+async function processAudioResponses(includeTelephoneAudio, highQualityResponse, telephoneQualityResponse) {
     // Process high-quality audio
     const audioBlob = await highQualityResponse.blob();
     currentAudioBlob = audioBlob;
-    // 2. Create a URL for the audio blob
+    // Create a URL for the audio blob
     const audioUrl = URL.createObjectURL(audioBlob);
     elements.audioPlayer.src = audioUrl;
-    elements.audioSectionQuality.classList.remove('d-none'); // Make both players visible when audio is generated, d-none is bottstrap intern class
-    if (includeTelephone) {
+    elements.audioSectionQuality.classList.remove('d-none'); // Make high-quality player visible
+    
+    if (includeTelephoneAudio) {
         // Process telephone quality audio
         const tempTelephoneAudioBlob = await telephoneQualityResponse.blob();
         // Convert PCM to MP3 for telephone audio and assign to global variable
         telephoneAudioBlob = await convertPCM(tempTelephoneAudioBlob);
         const telephoneAudioUrl = URL.createObjectURL(telephoneAudioBlob);
-        elements.audioPlayerTelephone.src = telephoneAudioUrl; // Set the audio source
-        elements.audioSectionTel.classList.remove('d-none'); // Make both players visible when audio is generated, d-none is bottstrap intern class
-
+        elements.audioPlayerTelephone.src = telephoneAudioUrl;
+        elements.audioSectionTel.classList.remove('d-none'); // Make telephone player visible
     }
 }
 
@@ -391,13 +383,6 @@ function applyConfig(config) {
         elements.text.value = config.text;
     }
 }
-// function setupConfig(configRef) //incomplete
-// {
-//      if (configRef) {
-//         configRef.value = configRef;
-//         saveApiKey();
-//      }
-// }
 
 function generateShareableUrl(includeApiKey = false) {
     const config = {
@@ -413,6 +398,6 @@ function generateShareableUrl(includeApiKey = false) {
 
     const base64Config = btoa(JSON.stringify(config));
     const url = new URL(window.location.href);
-    url.hash = `?${PARAM_KEY}=${base64Config}`;
+    url.hash = `${PARAM_KEY}=${base64Config}`;
     return url.toString();
-    }
+}
