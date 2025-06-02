@@ -24,3 +24,11 @@ textarea {
 .sliders-loading {
     visibility: hidden;
 }
+
+.form-range::-webkit-slider-thumb {
+    background-color: #10cad0;
+}
+
+.form-range.at-default-value::-webkit-slider-thumb {
+    background-color: #19bb0d;
+}

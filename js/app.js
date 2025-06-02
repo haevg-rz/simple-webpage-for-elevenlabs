@@ -123,19 +123,26 @@ function loadSliderValuesAndUpdateDisplay(slider, sliderDisplay, storageKeyRef, 
     }
 }
 
-function updateSliderValuesOnInput(Slider, SliderValueDisplay, SliderDefaultValue) { // update Slider values as well as the text display values of those Sliders
+function updateSliderValuesOnInput(Slider, SliderValueDisplay, SliderDefaultValue, SliderStorageValue) { // update Slider values as well as the text display values of those Sliders
     if (Slider && SliderValueDisplay) {
         Slider.addEventListener('input', () => {
-            SliderValueDisplay.textContent = SliderValueDisplay.value; // Update the display value
-            localStorage.setItem(STORAGE_KEYS.speed, Slider.value); // Save speed to localStorage, every time the slider is moved
-
-            if(Slider.value == SliderDefaultValue)
+            SliderValueDisplay.textContent = Slider.value; // Update the display value
+            localStorage.setItem(SliderStorageValue, Slider.value); // Save speed to localStorage, every time the slider is moved
+            
+            //change Slider Color if slider is at default value
+            if(Slider.value == SliderDefaultValue) 
             {
-                setSliderDefaultAppearance();
+                Slider.classList.add('at-default-value');
+            }else{
+                Slider.classList.remove('at-default-value');
             }
         });
     }
 }
+
+// function setSliderDefaultAppearance(Slider)
+// {
+// }
 
 function setupEventListeners() {
     elements.saveApiKey.addEventListener('click', saveApiKey);
@@ -150,10 +157,10 @@ function setupEventListeners() {
     elements.previousText.addEventListener('change', () => localStorage.setItem(STORAGE_KEYS.previousText, elements.previousText.value));
 
     //update slider values
-    updateSliderValuesOnInput(elements.speedSlider, elements.speedValueDisplay);
-    updateSliderValuesOnInput(elements.stabilitySlider, elements.stabilityValueDisplay);
-    updateSliderValuesOnInput(elements.similarityBoostSlider, elements.similarityBoostValueDisplay);
-    updateSliderValuesOnInput(elements.styleSlider, elements.styleValueDisplay);
+    updateSliderValuesOnInput(elements.speedSlider, elements.speedValueDisplay, DEFAULT_VALUES.speed,STORAGE_KEYS.speed);
+    updateSliderValuesOnInput(elements.stabilitySlider, elements.stabilityValueDisplay, DEFAULT_VALUES.stability,STORAGE_KEYS.stability);
+    updateSliderValuesOnInput(elements.similarityBoostSlider, elements.similarityBoostValueDisplay,DEFAULT_VALUES.similarityBoost,STORAGE_KEYS.similarityBoost);
+    updateSliderValuesOnInput(elements.styleSlider, elements.styleValueDisplay, DEFAULT_VALUES.style, STORAGE_KEYS.style);
 
     // Initialize Bootstrap Tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -169,10 +176,6 @@ function setupEventListeners() {
             .catch(err => console.error('Failed to copy URL:', err));
     });
 }
-
-// function changeSliderAppearanceOnDefault(Slider) {
-//     if(Slider.value == D)
-// }
 
 function saveApiKey() {
     const apiKey = elements.apiKey.value.trim();
