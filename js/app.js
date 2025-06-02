@@ -391,13 +391,7 @@ function applyConfig(config) {
         elements.text.value = config.text;
     }
 }
-// function setupConfig(configRef) //incomplete
-// {
-//      if (configRef) {
-//         configRef.value = configRef;
-//         saveApiKey();
-//      }
-// }
+
 
 function generateShareableUrl(includeApiKey = false) {
     const config = {
