@@ -346,9 +346,10 @@ function downloadAudioTelephone() {
 }
 
 
-function loadParametersFromUrl() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const configParam = urlParams.get(PARAM_KEY);
+function loadParametersFromUrl() { //potentially there is a bug here
+    //const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(window.location.hash.substring(1)); //von .search zu .hash.substring(1) ungewandelt
+    const configParam = urlParams.get(PARAM_KEY); //const PARAM_KEY = 'config'
 
     if (configParam) {
         try {
@@ -370,6 +371,7 @@ function applyConfig(config) {
     if (config.modelId) {
         elements.modelId.value = config.modelId;
         localStorage.setItem(STORAGE_KEYS.modelId, config.modelId);
+
     }
     if (config.voiceId) {
         elements.voiceId.value = config.voiceId;
@@ -381,6 +383,7 @@ function applyConfig(config) {
     }
     if (config.text) {
         elements.text.value = config.text;
+        text.value = elements.text.value; //sets the text to the html text on the website
     }
 }
 
