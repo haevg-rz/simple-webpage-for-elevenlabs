@@ -34,7 +34,7 @@ const elementIds = {
     removeApiKey: 'removeApiKey',
     text: 'text',
     previousText: 'previousText',
-    modelId: 'templateSelect', // rename templateSelect to modelId
+    modelId: 'modelSelect', // rename templateSelect to modelId
     voiceId: 'voiceId',
     resetParams: 'resetParams',
     generateVoice: 'generateVoice',
