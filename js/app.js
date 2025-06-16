@@ -26,42 +26,38 @@ const STORAGE_KEYS = {
 
 const PARAM_KEY = 'config';
 
-const elements = {
-    apiKey: document.getElementById('apiKey'),
-    apiKeySection: document.getElementById('apiKeySection'),
-    saveApiKey: document.getElementById('saveApiKey'),
-    removeApiKey: document.getElementById('removeApiKey'),
-    text: document.getElementById('text'),
-    previousText: document.getElementById('previousText'),
-    modelId: document.getElementById('modelId'), //modelId is the model to use for text to speech
-    voiceId: document.getElementById('voiceId'),
-    resetParams: document.getElementById('resetParams'),
-    generateVoice: document.getElementById('generateVoice'),
-
-    audioSectionQuality: document.getElementById('audioSectionQuality'), //Setup Audio Section
-    audioSectionTel: document.getElementById('audioSectionTel'), //Setup Audio Section
-
-
-    // Default Audio Player Elements
-    audioPlayer: document.getElementById('audioPlayer'),
-    downloadAudio: document.getElementById('downloadAudio'),
-
-    // Telephone Audio Player Elements
-    audioPlayerTelephone: document.getElementById('audioPlayerTelephone'),
-    downloadAudioTelephone: document.getElementById('downloadAudioTelephone'),
-
-    // Add references to the new sliders
-    speedSlider: document.getElementById('speedSlider'),
-    stabilitySlider: document.getElementById('stabilitySlider'),
-    similarityBoostSlider: document.getElementById('similarityBoostSlider'),
-    styleSlider: document.getElementById('styleSlider'),
-
-    // Add references to display values for sliders
-    speedValueDisplay: document.getElementById('speedValueDisplay'),
-    stabilityValueDisplay: document.getElementById('stabilityValueDisplay'),
-    similarityBoostValueDisplay: document.getElementById('similarityBoostValueDisplay'),
-    styleValueDisplay: document.getElementById('styleValueDisplay')
+const elementIds = {
+    // key: id in HTML
+    apiKey: 'apiKey',
+    apiKeySection: 'apiKeySection',
+    saveApiKey: 'saveApiKey',
+    removeApiKey: 'removeApiKey',
+    text: 'text',
+    previousText: 'previousText',
+    modelId: 'modelSelect', // rename templateSelect to modelId
+    voiceId: 'voiceId',
+    resetParams: 'resetParams',
+    generateVoice: 'generateVoice',
+    audioSectionQuality: 'audioSectionQuality',
+    audioSectionTel: 'audioSectionTel',
+    audioPlayer: 'audioPlayer',
+    downloadAudio: 'downloadAudio',
+    audioPlayerTelephone: 'audioPlayerTelephone',
+    downloadAudioTelephone: 'downloadAudioTelephone',
+    speedSlider: 'speedSlider',
+    stabilitySlider: 'stabilitySlider',
+    similarityBoostSlider: 'similarityBoostSlider',
+    styleSlider: 'styleSlider',
+    speedValueDisplay: 'speedValueDisplay',
+    stabilityValueDisplay: 'stabilityValueDisplay',
+    similarityBoostValueDisplay: 'similarityBoostValueDisplay',
+    styleValueDisplay: 'styleValueDisplay'
 };
+
+const elements = Object.keys(elementIds).reduce((acc, key) => {
+    acc[key] = document.getElementById(elementIds[key]);
+    return acc;
+}, {});
 
 document.addEventListener('DOMContentLoaded', () => {
     loadParametersFromUrl();
@@ -221,6 +217,10 @@ async function generateVoice() {
             },
             body: JSON.stringify({
                 text: text,
+                //model_id: elements.modelId.value,
+                //model_id: "eleven_flash_v2_5", //works
+                //model_id: "eleven_v3", //does not work at the Moment, need to get access from elevenlabs
+               // model_id: "eleven_multilingual_v2", //hardcoded for now 
                 model_id: elements.modelId.value,
                 previous_text: elements.previousText.value,
                 voice_settings: {
@@ -276,7 +276,7 @@ async function processAudioResponses(includeTelephoneAudio, highQualityResponse,
     const audioUrl = URL.createObjectURL(audioBlob);
     elements.audioPlayer.src = audioUrl;
     elements.audioSectionQuality.classList.remove('d-none'); // Make high-quality player visible
-    
+
     if (includeTelephoneAudio) {
         // Process telephone quality audio
         const tempTelephoneAudioBlob = await telephoneQualityResponse.blob();
