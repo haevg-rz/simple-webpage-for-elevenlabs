@@ -11,7 +11,7 @@ textarea {
     margin-right: 0.5rem;
 }
 
-#audioSection {
+#audioSectionQuality, #audioSectionTel {
     background-color: #f8f9fa;
     padding: 1rem;
     border-radius: 0.25rem;
@@ -23,4 +23,12 @@ textarea {
 
 .sliders-loading {
     visibility: hidden;
+}
+
+.form-range::-webkit-slider-thumb {
+    background-color: #10cad0;
+}
+
+.form-range.at-default-value::-webkit-slider-thumb {
+    background-color: #19bb0d;
 }
