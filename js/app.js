@@ -33,7 +33,8 @@ const elements = {
     removeApiKey: document.getElementById('removeApiKey'),
     text: document.getElementById('text'),
     previousText: document.getElementById('previousText'),
-    modelId: document.getElementById('modelId'), //modelId is the model to use for text to speech
+    //oldmodelId: document.getElementById('modelId'), //modelId is the model to use for text to speech
+    modelId: document.getElementById('templateSelect'), //getting reference to currently selected value in dropdown
     voiceId: document.getElementById('voiceId'),
     resetParams: document.getElementById('resetParams'),
     generateVoice: document.getElementById('generateVoice'),
@@ -221,7 +222,11 @@ async function generateVoice() {
             },
             body: JSON.stringify({
                 text: text,
-                model_id: elements.modelId.value,
+                //model_id: elements.modelId.value,
+                model_id: "eleven_multilingual_v2", //hardcoded for now 
+                //model_id: "eleven_flash_v2_5", //works
+                //model_id: "eleven_v3", //does not work at the Moment, need to get access from elevenlabs
+
                 previous_text: elements.previousText.value,
                 voice_settings: {
                     speed: parseFloat(elements.speedSlider.value),
@@ -276,7 +281,7 @@ async function processAudioResponses(includeTelephoneAudio, highQualityResponse,
     const audioUrl = URL.createObjectURL(audioBlob);
     elements.audioPlayer.src = audioUrl;
     elements.audioSectionQuality.classList.remove('d-none'); // Make high-quality player visible
-    
+
     if (includeTelephoneAudio) {
         // Process telephone quality audio
         const tempTelephoneAudioBlob = await telephoneQualityResponse.blob();

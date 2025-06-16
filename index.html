@@ -30,8 +30,13 @@
                 <input type="text" id="previousText" class="form-control" value="">
             </div>
             <div class="col-md-4">
-                <label for="modelId" class="form-label">Model ID</label>
-                <input type="text" id="modelId" class="form-control" value="eleven_multilingual_v2">
+                <div class="mb-4">
+                    <label for="templateSelect" class="form-label">Model ID</label>
+                    <select id="templateSelect" class="form-select">
+                        <option value="v2_model">eleven_multilingual_v2</option>
+                        <option value="v3_model" disabled>eleven_v3</option>   <!-- disabled will be removed once we get access from elevenlabs -->
+                    </select>
+                </div>
             </div>
             <div class="col-md-4">
                 <label for="voiceId" class="form-label">Voice ID</label>
