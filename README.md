@@ -30,6 +30,24 @@ This project was created in about 20 minutes using GitHub Copilot. Here's the st
 7. Updated documentation with repository details
 8. Finish the readme.md with this prompt: "Fix the typos in #file:README.md and make the file better readable"
 
+### Test Base64 String
+
+```sh
+echo "eyJtb2RlbElkIjoiLi4uIiwidm9pY2VJZCI6Ii4uLiIsInByZXZpb3VzVGV4dCI6Ii4uLiIsInRleHQiOiIuLi4iLCJhcGlrZXkiOiIuLi4ifQo=" | base64 -d | jq
+# {
+#   "modelId": "eleven_multilingual_v2",
+#   "voiceId": "...",
+#   "previousText": "...",
+#   "text": "...",
+#   "apikey": "..."
+# }
+```
+
+```sh
+echo '{"modelId":"...","voiceId":"...","previousText":"...","text":"...","apikey":"..."}' | base64 - -w0
+# eyJtb2RlbElkIjoiLi4uIiwidm9pY2VJZCI6Ii4uLiIsInByZXZpb3VzVGV4dCI6Ii4uLiIsInRleHQiOiIuLi4iLCJhcGlrZXkiOiIuLi4ifQo=
+```
+
 ## Repository Structure
 
 The development process is documented in these branches:
