@@ -346,26 +346,35 @@ function downloadAudioTelephone() {
 }
 
 
-function loadParametersFromUrl() { //potentially there is a bug here
-    //const urlParams = new URLSearchParams(window.location.search);
-    const urlParams = new URLSearchParams(window.location.hash.substring(1)); //von .search zu .hash.substring(1) ungewandelt
-    const configParam = urlParams.get(PARAM_KEY); //const PARAM_KEY = 'config'
-
-    if (configParam) {
-        try {
-            const config = JSON.parse(atob(configParam));
-            applyConfig(config);
-            window.history.replaceState({}, '', window.location.pathname);
-        } catch (error) {
-            console.error('Failed to parse URL parameters:', error);
+function loadParametersFromUrl() {
+    const hash = window.location.hash.substring(1); // Remove the # symbol
+    
+    if (hash) {
+        // Parse the hash manually since it's in format: config=base64string
+        // Use indexOf to split only on the first = to handle base64 padding
+        const equalIndex = hash.indexOf('=');
+        if (equalIndex !== -1) {
+            const paramKey = hash.substring(0, equalIndex);
+            const configParam = hash.substring(equalIndex + 1);
+            
+            if (paramKey === PARAM_KEY) {
+                try {
+                    const config = JSON.parse(atob(configParam));
+                    applyConfig(config);
+                    window.history.replaceState({}, '', window.location.pathname);
+                } catch (error) {
+                    console.error('Failed to parse URL parameters:', error);
+                }
+            }
         }
     }
 }
 
 function applyConfig(config) {
-    // setupConfig(config.apiKey);
-    if (config.apiKey) {
-        elements.apiKey.value = config.apiKey;
+    // Handle both apiKey (camelCase) and apikey (lowercase) for backwards compatibility
+    const apiKeyValue = config.apiKey || config.apikey;
+    if (apiKeyValue) {
+        elements.apiKey.value = apiKeyValue;
         saveApiKey();
     }
     if (config.modelId) {
@@ -383,7 +392,7 @@ function applyConfig(config) {
     }
     if (config.text) {
         elements.text.value = config.text;
-        text.value = elements.text.value; //sets the text to the html text on the website
+        // No need to reassign, elements.text.value is already set above
     }
 }
 
